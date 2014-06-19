@@ -1,7 +1,7 @@
+TOP := .
 TOPDIR :=
 
 BUILD_SYSTEM := $(TOPDIR)build/core
-BUILD_EXECUTABLE := $(BUILD_SYSTEM)/binary.mk
 
 # This is the default target.  It must be the first declared target.
 DEFAULT_GOAL := goal
@@ -30,6 +30,9 @@ ifneq ($(filter $(dont_bother_goals), $(MAKECMDGOALS)),)
 dont_bother := true
 endif
 
+# Set up various standard variables based on configuration
+# and host information.
+include $(BUILD_SYSTEM)/config.mk
 
 # Bring in standard build system definitions.
 include $(BUILD_SYSTEM)/definitions.mk
