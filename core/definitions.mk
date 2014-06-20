@@ -120,8 +120,9 @@ endef
 ###########################################################
 
 define all-makefiles-under
-$(wildcard $(1)/*/Android.mk)
+$(shell find $(1) -name $(BUILD_MAKEFILE) | xargs echo)
 endef
+#$(wildcard $(1)/*/$(BUILD_MAKEFILE))
 
 ###########################################################
 ## Look under a directory for makefiles that don't have parent
@@ -378,6 +379,31 @@ endef
 
 define add-prebuilt-files
     $(foreach f,$(2),$(call add-prebuilt-file,$f,$(1)))
+endef
+
+###########################################################
+## Dump the variables that are associated with targets
+###########################################################
+
+define dump-module-variables
+@echo all_dependencies=$^
+@echo PRIVATE_YACCFLAGS=$(PRIVATE_YACCFLAGS);
+@echo PRIVATE_CFLAGS=$(PRIVATE_CFLAGS);
+@echo PRIVATE_CPPFLAGS=$(PRIVATE_CPPFLAGS);
+@echo PRIVATE_DEBUG_CFLAGS=$(PRIVATE_DEBUG_CFLAGS);
+@echo PRIVATE_C_INCLUDES=$(PRIVATE_C_INCLUDES);
+@echo PRIVATE_LDFLAGS=$(PRIVATE_LDFLAGS);
+@echo PRIVATE_LDLIBS=$(PRIVATE_LDLIBS);
+@echo PRIVATE_ARFLAGS=$(PRIVATE_ARFLAGS);
+@echo PRIVATE_AAPT_FLAGS=$(PRIVATE_AAPT_FLAGS);
+@echo PRIVATE_DX_FLAGS=$(PRIVATE_DX_FLAGS);
+@echo PRIVATE_JAVACFLAGS=$(PRIVATE_JAVACFLAGS);
+@echo PRIVATE_JAVA_LIBRARIES=$(PRIVATE_JAVA_LIBRARIES);
+@echo PRIVATE_ALL_SHARED_LIBRARIES=$(PRIVATE_ALL_SHARED_LIBRARIES);
+@echo PRIVATE_ALL_STATIC_LIBRARIES=$(PRIVATE_ALL_STATIC_LIBRARIES);
+@echo PRIVATE_ALL_WHOLE_STATIC_LIBRARIES=$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES);
+@echo PRIVATE_ALL_OBJECTS=$(PRIVATE_ALL_OBJECTS);
+@echo PRIVATE_NO_CRT=$(PRIVATE_NO_CRT);
 endef
 
 

@@ -2,6 +2,7 @@ TOP := .
 TOPDIR :=
 
 BUILD_SYSTEM := $(TOPDIR)build/core
+BUILD_MAKEFILE := Modules.mk
 
 # This is the default target.  It must be the first declared target.
 DEFAULT_GOAL := goal
@@ -52,10 +53,21 @@ else # ONE_SHOT_MAKEFILE
 
 # Can't use first-makefiles-under here because
 # --mindepth=2 makes the prunes not work.
+ifdef FIND_MAKEFILE_PY
 subdir_makefiles := \
-	$(shell build/tools/findleaves.py --prune=$(OUT_DIR) --prune=.repo --prune=.git $(subdirs) Android.mk)
+	$(shell build/tools/findleaves.py --prune=$(OUT_DIR) --prune=.repo --prune=.git $(subdirs) $(BUILD_MAKEFILE))
+else # FIND_MAKEFILE_PY
+#subdir_makefiles := $(call all-subdir-makefiles)
+subdir_makefiles := $(call all-makefiles-under,$(TOP))
+endif # FIND_MAKEFILE_PY
 
 $(foreach mk, $(subdir_makefiles), $(info including $(mk) ...)$(eval include $(mk)))
 
 endif # ONE_SHOT_MAKEFILE
 
+$(DEFAULT_GOAL): $(ALL_MODULES)
+	@echo "==== $(DEFAULT_GOAL) ===="
+
+FORCE:
+	echo $(ONE_SHOT_MAKEFILE)
+	echo $(subdir_makefiles)
