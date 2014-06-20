@@ -38,12 +38,20 @@ include $(BUILD_SYSTEM)/config.mk
 # Bring in standard build system definitions.
 include $(BUILD_SYSTEM)/definitions.mk
 
+#
+# Typical build; include any Android.mk files we can find.
+#
+subdirs := $(TOP)
+
+FULL_BUILD := true
 
 
 ifneq ($(ONE_SHOT_MAKEFILE),)
 # We've probably been invoked by the "mm" shell function
 # with a subdirectory's makefile.
 include $(ONE_SHOT_MAKEFILE)
+
+FULL_BUILD :=
 
 else # ONE_SHOT_MAKEFILE
 
