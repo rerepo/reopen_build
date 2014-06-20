@@ -17,6 +17,9 @@ define xxxxxxxxx
 	@echo $(c_deps)
 endef
 
+# FIXME: temp use "dont_bother" defined in main.mk
+ifneq ($(dont_bother),true)
+
 ###########################################################
 # Rule-specific variable definitions
 ###########################################################
@@ -44,9 +47,12 @@ $(c_objects): %.o: %.c
 
 -include $(c_deps)
 
-.PHONY: $(DEFAULT_CLEAN)
-$(DEFAULT_CLEAN):
-	@echo "==== $(DEFAULT_CLEAN) ===="
-	@echo $(MAKECMDGOALS)
+
+else
+
+.PHONY: $(c_binary)
+$(c_binary):
+	@echo '>>> Clean target: $@'
 	rm -f $(c_binary) $(c_objects) $(c_deps)
 
+endif

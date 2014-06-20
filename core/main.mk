@@ -76,6 +76,12 @@ endif # ONE_SHOT_MAKEFILE
 $(DEFAULT_GOAL): $(ALL_MODULES)
 	@echo "==== $(DEFAULT_GOAL) ===="
 
+# FIXME
+#.PHONY: $(ALL_MODULES)
+.PHONY: $(DEFAULT_CLEAN)
+$(DEFAULT_CLEAN): $(ALL_MODULES)
+	@echo "==== $(DEFAULT_CLEAN) ===="
+
 FORCE:
 	echo $(ONE_SHOT_MAKEFILE)
 	echo $(subdir_makefiles)
