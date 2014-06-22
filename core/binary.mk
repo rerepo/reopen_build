@@ -6,6 +6,10 @@ c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
 c_objects := $(patsubst %.c,$(LOCAL_PATH)/%.o,$(LOCAL_SRC_FILES))
 c_deps := $(patsubst %.c,$(LOCAL_PATH)/%.d,$(LOCAL_SRC_FILES))
 
+$(warning c_binary == $(c_binary))
+$(warning c_objects == $(c_objects))
+$(warning c_deps == $(c_deps))
+
 #$(DEFAULT_GOAL): $(c_binary)
 #$(DEFAULT_GOAL):
 define xxxxxxxxx
@@ -50,9 +54,13 @@ $(c_objects): %.o: %.c
 
 else
 
+$(c_binary): private_binary := $(c_binary)
+$(c_binary): private_objects := $(c_objects)
+$(c_binary): private_deps := $(c_deps)
+
 .PHONY: $(c_binary)
 $(c_binary):
 	@echo '>>> Clean target: $@'
-	rm -f $(c_binary) $(c_objects) $(c_deps)
+	rm -f $(private_binary) $(private_objects) $(private_deps)
 
 endif
