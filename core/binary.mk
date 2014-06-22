@@ -58,8 +58,8 @@ $(c_binary): private_binary := $(c_binary)
 $(c_binary): private_objects := $(c_objects)
 $(c_binary): private_deps := $(c_deps)
 
-.PHONY: $(c_binary)
-$(c_binary):
+#.PHONY: $(c_binary)
+$(c_binary)::
 	@echo '>>> Clean target: $@'
 	rm -f $(private_binary) $(private_objects) $(private_deps)
 
