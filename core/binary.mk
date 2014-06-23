@@ -2,13 +2,17 @@
 include $(BUILD_BASE_RULES)
 #######################################
 
-c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
-c_objects := $(patsubst %.c,$(LOCAL_PATH)/%.o,$(LOCAL_SRC_FILES))
-c_deps := $(patsubst %.c,$(LOCAL_PATH)/%.d,$(LOCAL_SRC_FILES))
+###########################################################
+## C: Compile .c files to .o.
+###########################################################
 
-$(warning c_binary == $(c_binary))
+#c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
+c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
+c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
+
+#$(warning c_binary == $(c_binary))
 $(warning c_objects == $(c_objects))
-$(warning c_deps == $(c_deps))
+#$(warning c_deps == $(c_deps))
 
 #$(DEFAULT_GOAL): $(c_binary)
 #$(DEFAULT_GOAL):
@@ -27,14 +31,16 @@ ifneq ($(dont_bother),true)
 ###########################################################
 # Rule-specific variable definitions
 ###########################################################
-#$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
-$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+#$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
 # this is really the way to get the files onto the command line instead
 # of using $^, because then LOCAL_ADDITIONAL_DEPENDENCIES doesn't work
 #$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_ALL_OBJECTS := $(all_objects)
 
-$(c_binary): $(c_objects)
+# FIXME: opt rule relationship
+#$(c_binary): $(c_objects)
+$(LOCAL_BUILT_MODULE): $(c_objects)
 	@echo '>>> Linking file: $^'
 #	$(CC) $(CFLAGS) -o $@ $^
 	gcc -o $@ $^
@@ -42,8 +48,10 @@ $(c_binary): $(c_objects)
 	@echo '>>> Finished building target: $@'
 	@echo ' '
 
-$(c_objects): %.o: %.c
-	@echo '>>> Building file: $<'
+$(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
+#	@echo '>>> Building file: $<'
+	@mkdir -p $(dir $@)
+	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
 #	$(CC) $(CFLAGS) -o $@ -c $<
 	gcc -o $@ -c $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
 #	gcc -o $@ -c $< -MMD -MP -MF $(patsubst %.o,%.d,$@) -MT $(patsubst %.o,%.d,$@)
