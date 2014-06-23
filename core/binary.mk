@@ -38,15 +38,6 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 # of using $^, because then LOCAL_ADDITIONAL_DEPENDENCIES doesn't work
 #$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_ALL_OBJECTS := $(all_objects)
 
-# FIXME: opt rule relationship
-#$(c_binary): $(c_objects)
-$(LOCAL_BUILT_MODULE): $(c_objects)
-	@echo '>>> Linking file: $^'
-#	$(CC) $(CFLAGS) -o $@ $^
-	gcc -o $@ $^
-	@echo ' '
-	@echo '>>> Finished building target: $@'
-	@echo ' '
 
 $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
 #	@echo '>>> Building file: $<'
