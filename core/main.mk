@@ -28,7 +28,10 @@ dont_bother_goals := clean clobber dataclean installclean \
     bootimage-nodeps
 
 ifneq ($(filter $(dont_bother_goals), $(MAKECMDGOALS)),)
+# build == bother
+# clean == dont_bother
 dont_bother := true
+$(warning dont_bother == $(dont_bother))
 endif
 
 # Set up various standard variables based on configuration
