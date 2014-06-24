@@ -30,7 +30,7 @@ ifneq ($(strip $(LOCAL_BUILT_MODULE)$(LOCAL_INSTALLED_MODULE)),)
 endif
 
 #intermediates := $(call local-intermediates-dir)
-intermediates := $(LOCAL_PATH)/out
+intermediates := $(OUT_DIR)/$(LOCAL_PATH)
 # TODO: define out dir
 # NOTE: intermediates != LOCAL_PATH, otherwise clean self
 
@@ -66,13 +66,14 @@ LOCAL_INTERMEDIATE_TARGETS += $(LOCAL_BUILT_MODULE)
 ###########################################################
 ## make clean- targets
 ###########################################################
-cleantarget := clean-$(LOCAL_MODULE)
+cleantarget := $(DEFAULT_CLEAN_PREFIX)$(LOCAL_MODULE)
 $(cleantarget) : PRIVATE_MODULE := $(LOCAL_MODULE)
 $(cleantarget) : PRIVATE_CLEAN_FILES := \
     $(LOCAL_BUILT_MODULE) \
     $(LOCAL_INSTALLED_MODULE) \
     $(intermediates)
-# FIXME: clean project self ?!
+# FIXED: $(intermediates) clean project self ?!
+# FIXME: $(LOCAL_INSTALLED_MODULE) now is "out/module" and UNINSTALLABLE should be null
 $(cleantarget)::
 	@echo "Clean: $(PRIVATE_MODULE)"
 	$(hide) rm -rf $(PRIVATE_CLEAN_FILES)

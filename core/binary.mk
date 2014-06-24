@@ -25,8 +25,8 @@ define xxxxxxxxx
 	@echo $(c_deps)
 endef
 
-# FIXME: temp use "dont_bother" defined in main.mk
-ifneq ($(dont_bother),true)
+# FIXED: temp use "dont_bother" defined in main.mk
+#ifneq ($(dont_bother),true)
 
 ###########################################################
 # Rule-specific variable definitions
@@ -49,17 +49,3 @@ $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
 	@echo ' '
 
 -include $(c_deps)
-
-
-else
-
-$(c_binary): private_binary := $(c_binary)
-$(c_binary): private_objects := $(c_objects)
-$(c_binary): private_deps := $(c_deps)
-
-#.PHONY: $(c_binary)
-$(c_binary)::
-	@echo '>>> Clean target: $@'
-	rm -f $(private_binary) $(private_objects) $(private_deps)
-
-endif
