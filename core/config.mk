@@ -5,6 +5,7 @@
 BUILD_COMBOS := $(BUILD_SYSTEM)/combo
 
 CLEAR_VARS := $(BUILD_SYSTEM)/clear_vars.mk
+BUILD_HOST_SHARED_LIBRARY := $(BUILD_SYSTEM)/host_shared_library.mk
 #BUILD_EXECUTABLE := $(BUILD_SYSTEM)/executable.mk
 BUILD_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
 BUILD_HOST_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
