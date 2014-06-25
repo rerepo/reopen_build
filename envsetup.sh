@@ -5,6 +5,8 @@ function hmm()
 {
     echo "
 Invoke $ source build/envsetup.sh from your shell to add the following functions to your environment:
+- croot:   Changes directory to the top of the tree.
+- m:       Makes from the top of the tree.
 - mm:      Builds all of the modules in the current directory, but not their dependencies."
 }
 
@@ -34,13 +36,19 @@ function gettop()
     fi
 }
 
-function croot()
+function m()
 {
-    T=$(gettop)
-    if [ "$T" ]; then
-        \cd $(gettop)
+    # If we're sitting in the root of the build tree, just do a
+    # normal make.
+    if [ -f build/core/envsetup.mk -a -f Makefile ]; then
+        make $@
     else
-        echo "Couldn't locate the top of the tree.  Try setting TOP."
+        T=$(gettop)
+        if [ "$T" ]; then
+            make -C $T -f build/core/main.mk $@
+        else
+            echo "Couldn't locate the top of the tree.  Try setting TOP."
+        fi
     fi
 }
 
@@ -88,6 +96,16 @@ function mm()
         else
             ONE_SHOT_MAKEFILE=$M make -C $T -f build/core/main.mk $@
         fi
+    fi
+}
+
+function croot()
+{
+    T=$(gettop)
+    if [ "$T" ]; then
+        \cd $(gettop)
+    else
+        echo "Couldn't locate the top of the tree.  Try setting TOP."
     fi
 }
 
