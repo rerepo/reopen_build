@@ -35,7 +35,7 @@ include $(BUILD_BINARY)
 
 #$(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries) $(LOCAL_ADDITIONAL_DEPENDENCIES)
 #	$(transform-host-o-to-shared-lib)
-$(LOCAL_BUILT_MODULE): $(c_objects)
+$(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries) $(LOCAL_ADDITIONAL_DEPENDENCIES)
 	@mkdir -p $(dir $@)
 	@echo "host SharedLib: $(PRIVATE_MODULE) ($@)"
 	gcc -o $@ -shared $^

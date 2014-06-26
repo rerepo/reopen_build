@@ -15,8 +15,10 @@ include $(BUILD_BINARY)
 
 # FIXED: opt rule relationship
 #$(c_binary): $(c_objects)
-# FIXME: opt c_objects --> all_objects
-$(LOCAL_BUILT_MODULE): $(c_objects)
+# FIXED: opt c_objects --> all_objects
+$(warning all_objects == $(all_objects))
+$(warning all_libraries == $(all_libraries))
+$(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries)
 #	@echo '>>> Linking file: $^'
 	@mkdir -p $(dir $@)
 	@echo "host Executable: $(PRIVATE_MODULE) ($@)"
