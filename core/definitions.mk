@@ -381,6 +381,84 @@ define add-prebuilt-files
     $(foreach f,$(2),$(call add-prebuilt-file,$f,$(1)))
 endef
 
+
+###########################################################
+## The intermediates directory.  Where object files go for
+## a given target.  We could technically get away without
+## the "_intermediates" suffix on the directory, but it's
+## nice to be able to grep for that string to find out if
+## anyone's abusing the system.
+###########################################################
+
+# $(1): target class, like "APPS"
+# $(2): target name, like "NotePad"
+# $(3): if non-empty, this is a HOST target.
+# $(4): if non-empty, force the intermediates to be COMMON
+define intermediates-dir-for
+$(strip \
+    $(eval _idfClass := $(strip $(1))) \
+    $(if $(_idfClass),, \
+        $(error $(LOCAL_PATH): Class not defined in call to intermediates-dir-for)) \
+    $(eval _idfName := $(strip $(2))) \
+    $(if $(_idfName),, \
+        $(error $(LOCAL_PATH): Name not defined in call to intermediates-dir-for)) \
+    $(eval _idfPrefix := $(if $(strip $(3)),HOST,TARGET)) \
+    $(if $(filter $(_idfPrefix)-$(_idfClass),$(COMMON_MODULE_CLASSES))$(4), \
+        $(eval _idfIntBase := $($(_idfPrefix)_OUT_COMMON_INTERMEDIATES)) \
+      , \
+        $(eval _idfIntBase := $($(_idfPrefix)_OUT_INTERMEDIATES)) \
+     ) \
+    $(_idfIntBase)/$(_idfClass)/$(_idfName)_intermediates \
+)
+endef
+
+# Uses LOCAL_MODULE_CLASS, LOCAL_MODULE, and LOCAL_IS_HOST_MODULE
+# to determine the intermediates directory.
+#
+# $(1): if non-empty, force the intermediates to be COMMON
+define local-intermediates-dir
+$(strip \
+    $(if $(strip $(LOCAL_MODULE_CLASS)),, \
+        $(error $(LOCAL_PATH): LOCAL_MODULE_CLASS not defined before call to local-intermediates-dir)) \
+    $(if $(strip $(LOCAL_MODULE)),, \
+        $(error $(LOCAL_PATH): LOCAL_MODULE not defined before call to local-intermediates-dir)) \
+    $(call intermediates-dir-for,$(LOCAL_MODULE_CLASS),$(LOCAL_MODULE),$(LOCAL_IS_HOST_MODULE),$(1)) \
+)
+endef
+
+###########################################################
+## Convert "path/to/libXXX.so" to "-lXXX".
+## Any "path/to/libXXX.a" elements pass through unchanged.
+###########################################################
+
+define normalize-libraries
+$(foreach so,$(filter %.so,$(1)),-l$(patsubst lib%.so,%,$(notdir $(so))))\
+$(filter-out %.so,$(1))
+endef
+
+# TODO: change users to call the common version.
+define normalize-host-libraries
+$(call normalize-libraries,$(1))
+endef
+
+define normalize-target-libraries
+$(call normalize-libraries,$(1))
+endef
+
+###########################################################
+## Commands for copying files
+###########################################################
+
+# Copy a single file from one place to another,
+# preserving permissions and overwriting any existing
+# file.
+# The same as copy-file-to-target, but use the local
+# cp command instead of acp.
+define copy-file-to-target-with-cp
+@mkdir -p $(dir $@)
+$(hide) cp -fp $< $@
+endef
+
 ###########################################################
 ## Dump the variables that are associated with targets
 ###########################################################

@@ -45,11 +45,11 @@ so_suffix := .so
 #so_suffix := $($(my_prefix)SHLIB_SUFFIX)
 #a_suffix := $($(my_prefix)STATIC_LIB_SUFFIX)
 
-#built_shared_libraries := \
-#    $(addprefix $($(my_prefix)OUT_INTERMEDIATE_LIBRARIES)/, \
-#      $(addsuffix $(so_suffix), \
-#        $(LOCAL_SHARED_LIBRARIES)))
-built_shared_libraries := $(addprefix $(intermediates)/,$(addsuffix $(so_suffix),$(LOCAL_SHARED_LIBRARIES)))
+built_shared_libraries := \
+    $(addprefix $($(my_prefix)OUT_INTERMEDIATE_LIBRARIES)/, \
+      $(addsuffix $(so_suffix), \
+        $(LOCAL_SHARED_LIBRARIES)))
+#built_shared_libraries := $(addprefix $(intermediates)/,$(addsuffix $(so_suffix),$(LOCAL_SHARED_LIBRARIES)))
 
 $(warning LOCAL_SHARED_LIBRARIES == $(LOCAL_SHARED_LIBRARIES))
 $(warning built_shared_libraries == $(built_shared_libraries))

@@ -5,6 +5,20 @@
 ## None.
 ###########################################################
 
+LOCAL_IS_HOST_MODULE := true
+
+# FIXME: should define in combo
+HOST_EXECUTABLE_SUFFIX :=
+#HOST_EXECUTABLE_SUFFIX := .exe
+
+# default LOCAL_MODULE_CLASS
+ifeq ($(strip $(LOCAL_MODULE_CLASS)),)
+LOCAL_MODULE_CLASS := EXECUTABLES
+endif
+ifeq ($(strip $(LOCAL_MODULE_SUFFIX)),)
+LOCAL_MODULE_SUFFIX := $(HOST_EXECUTABLE_SUFFIX)
+endif
+
 #######################################
 include $(BUILD_BINARY)
 #######################################
@@ -23,6 +37,8 @@ $(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries)
 	@mkdir -p $(dir $@)
 	@echo "host Executable: $(PRIVATE_MODULE) ($@)"
 #	$(CC) $(CFLAGS) -o $@ $^
-	gcc -o $@ $^
-# TODO: replace $^ --> $(PRIVATE_ALL_OBJECTS) to support additional lib (in binary.mk)
+	gcc -o $@ $(PRIVATE_ALL_OBJECTS) $(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) $(HOST_GLOBAL_LD_DIRS) -Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) -Wl,-rpath,\$$ORIGIN/../lib
+# TODONE: replace $^ --> $(PRIVATE_ALL_OBJECTS) to support additional lib (in binary.mk)
+# NOTE: HOST_GLOBAL_LD_DIRS := -L$(HOST_OUT_INTERMEDIATE_LIBRARIES)
+# FIXME: when bin do NOT need lib ld flag link "-l -L" should null
 #	@echo '>>> Finished building target: $@'
