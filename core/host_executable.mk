@@ -37,7 +37,7 @@ $(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries)
 	@mkdir -p $(dir $@)
 	@echo "host Executable: $(PRIVATE_MODULE) ($@)"
 #	$(CC) $(CFLAGS) -o $@ $^
-	gcc -o $@ $(PRIVATE_ALL_OBJECTS) $(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) $(HOST_GLOBAL_LD_DIRS) -Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) -Wl,-rpath,\$$ORIGIN/../lib
+	gcc -o $@ $(PRIVATE_ALL_OBJECTS) -Wl,--whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) -Wl,--no-whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) $(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) $(HOST_GLOBAL_LD_DIRS) -Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) -Wl,-rpath,\$$ORIGIN/../lib
 # TODONE: replace $^ --> $(PRIVATE_ALL_OBJECTS) to support additional lib (in binary.mk)
 # NOTE: HOST_GLOBAL_LD_DIRS := -L$(HOST_OUT_INTERMEDIATE_LIBRARIES)
 # FIXME: when bin do NOT need lib ld flag link "-l -L" should null

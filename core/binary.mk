@@ -42,6 +42,7 @@ all_objects := $(normal_objects) $(gen_o_objects)
 # various intermediates directories.
 # FIXME: should define in combo
 so_suffix := .so
+a_suffix := .a
 #so_suffix := $($(my_prefix)SHLIB_SUFFIX)
 #a_suffix := $($(my_prefix)STATIC_LIB_SUFFIX)
 
@@ -53,6 +54,22 @@ built_shared_libraries := \
 
 $(warning LOCAL_SHARED_LIBRARIES == $(LOCAL_SHARED_LIBRARIES))
 $(warning built_shared_libraries == $(built_shared_libraries))
+
+built_static_libraries := \
+    $(foreach lib,$(LOCAL_STATIC_LIBRARIES), \
+      $(call intermediates-dir-for, \
+        STATIC_LIBRARIES,$(lib),$(LOCAL_IS_HOST_MODULE))/$(lib)$(a_suffix))
+
+$(warning LOCAL_STATIC_LIBRARIES == $(LOCAL_STATIC_LIBRARIES))
+$(warning built_static_libraries == $(built_static_libraries))
+
+built_whole_libraries := \
+    $(foreach lib,$(LOCAL_WHOLE_STATIC_LIBRARIES), \
+      $(call intermediates-dir-for, \
+        STATIC_LIBRARIES,$(lib),$(LOCAL_IS_HOST_MODULE))/$(lib)$(a_suffix))
+
+$(warning LOCAL_WHOLE_STATIC_LIBRARIES == $(LOCAL_WHOLE_STATIC_LIBRARIES))
+$(warning built_whole_libraries == $(built_whole_libraries))
 
 #$(DEFAULT_GOAL): $(c_binary)
 #$(DEFAULT_GOAL):

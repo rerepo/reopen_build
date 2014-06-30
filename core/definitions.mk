@@ -445,6 +445,72 @@ define normalize-target-libraries
 $(call normalize-libraries,$(1))
 endef
 
+
+###########################################################
+## Commands for running ar
+###########################################################
+
+define _concat-if-arg2-not-empty
+$(if $(2),$(hide) $(1) $(2))
+endef
+
+# Split long argument list into smaller groups and call the command repeatedly
+# Call the command at least once even if there are no arguments, as otherwise
+# the output file won't be created.
+#
+# $(1): the command without arguments
+# $(2): the arguments
+define split-long-arguments
+$(hide) $(1) $(wordlist 1,500,$(2))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 501,1000,$(2)))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 1001,1500,$(2)))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 1501,2000,$(2)))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 2001,2500,$(2)))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 2501,3000,$(2)))
+$(call _concat-if-arg2-not-empty,$(1),$(wordlist 3001,99999,$(2)))
+endef
+
+
+###########################################################
+## Commands for running host ar
+###########################################################
+
+# FIXME: should in combo
+HOST_AR := ar
+HOST_GLOBAL_ARFLAGS := crsP
+#PRIVATE_ARFLAGS :=
+
+# $(1): the full path of the source static library.
+define _extract-and-include-single-host-whole-static-lib
+@echo "preparing StaticLib: $(PRIVATE_MODULE) [including $(1)]"
+$(hide) ldir=$(PRIVATE_INTERMEDIATES_DIR)/WHOLE/$(basename $(notdir $(1)))_objs;\
+    rm -rf $$ldir; \
+    mkdir -p $$ldir; \
+    filelist=; \
+    for f in `$(HOST_AR) t $(1) | \grep '\.o$$'`; do \
+        $(HOST_AR) p $(1) $$f > $$ldir/$$f; \
+        filelist="$$filelist $$ldir/$$f"; \
+    done ; \
+    $(HOST_AR) $(HOST_GLOBAL_ARFLAGS) $(PRIVATE_ARFLAGS) $@ $$filelist
+
+endef
+
+define extract-and-include-host-whole-static-libs
+$(foreach lib,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES), \
+    $(call _extract-and-include-single-host-whole-static-lib, $(lib)))
+endef
+
+# Explicitly delete the archive first so that ar doesn't
+# try to add to an existing archive.
+define transform-host-o-to-static-lib
+@mkdir -p $(dir $@)
+@rm -f $@
+$(extract-and-include-host-whole-static-libs)
+@echo "host StaticLib: $(PRIVATE_MODULE) ($@)"
+$(call split-long-arguments,$(HOST_AR) $(HOST_GLOBAL_ARFLAGS) $(PRIVATE_ARFLAGS) $@,$(filter %.o, $^))
+endef
+
+
 ###########################################################
 ## Commands for copying files
 ###########################################################
