@@ -5,6 +5,29 @@
 
 
 # ---------------------------------------------------------------
+# If you update the build system such that the environment setup
+# or buildspec.mk need to be updated, increment this number, and
+# people who haven't re-run those will have to do so before they
+# can build.  Make sure to also update the corresponding value in
+# buildspec.mk.default and envsetup.sh.
+CORRECT_BUILD_ENV_SEQUENCE_NUMBER := 10
+
+# ---------------------------------------------------------------
+# The product defaults to generic on hardware
+# NOTE: This will be overridden in product_config.mk if make
+# was invoked with a PRODUCT-xxx-yyy goal.
+ifeq ($(TARGET_PRODUCT),)
+TARGET_PRODUCT := full
+endif
+
+
+# the variant -- the set of files that are included for a build
+ifeq ($(strip $(TARGET_BUILD_VARIANT)),)
+TARGET_BUILD_VARIANT := eng
+endif
+
+
+# ---------------------------------------------------------------
 # Set up configuration for host machine.  We don't do cross-
 # compiles except for arm/mips, so the HOST is whatever we are
 # running on
@@ -76,6 +99,30 @@ else
   HOST_PREBUILT_TAG := $(HOST_OS)-$(HOST_ARCH)
 endif
 
+
+# Read the product specs so we an get TARGET_DEVICE and other
+# variables that we need in order to locate the output files.
+include $(BUILD_SYSTEM)/product_config.mk
+
+build_variant := $(filter-out eng user userdebug,$(TARGET_BUILD_VARIANT))
+ifneq ($(build_variant)-$(words $(TARGET_BUILD_VARIANT)),-1)
+$(warning bad TARGET_BUILD_VARIANT: $(TARGET_BUILD_VARIANT))
+$(error must be empty or one of: eng user userdebug)
+endif
+
+# ---------------------------------------------------------------
+# Set up configuration for target machine.
+# The following must be set:
+# 		TARGET_OS = { linux }
+# 		TARGET_ARCH = { arm | x86 | mips }
+
+TARGET_OS := linux
+# TARGET_ARCH should be set by BoardConfig.mk and will be checked later
+
+# the target build type defaults to release
+ifneq ($(TARGET_BUILD_TYPE),debug)
+TARGET_BUILD_TYPE := release
+endif
 
 # ---------------------------------------------------------------
 # figure out the output directories
