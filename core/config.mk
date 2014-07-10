@@ -77,9 +77,9 @@ include $(BUILD_SYSTEM)/combo/select.mk
 
 # on windows, the tools have .exe at the end, and we depend on the
 # host config stuff being done first
-# FIXME
-#combo_target := TARGET_
-#include $(BUILD_SYSTEM)/combo/select.mk
+# FIXED
+combo_target := TARGET_
+include $(BUILD_SYSTEM)/combo/select.mk
 
 # Compute TARGET_TOOLCHAIN_ROOT from TARGET_TOOLS_PREFIX
 # if only TARGET_TOOLS_PREFIX is passed to the make command.
