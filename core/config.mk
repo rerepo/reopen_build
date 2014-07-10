@@ -71,6 +71,26 @@ else
 endif
 
 # ---------------------------------------------------------------
+# include select combo
+combo_target := HOST_
+include $(BUILD_SYSTEM)/combo/select.mk
+
+# on windows, the tools have .exe at the end, and we depend on the
+# host config stuff being done first
+# FIXME
+#combo_target := TARGET_
+#include $(BUILD_SYSTEM)/combo/select.mk
+
+# Compute TARGET_TOOLCHAIN_ROOT from TARGET_TOOLS_PREFIX
+# if only TARGET_TOOLS_PREFIX is passed to the make command.
+ifndef TARGET_TOOLCHAIN_ROOT
+TARGET_TOOLCHAIN_ROOT := $(patsubst %/, %, $(dir $(TARGET_TOOLS_PREFIX)))
+TARGET_TOOLCHAIN_ROOT := $(patsubst %/, %, $(dir $(TARGET_TOOLCHAIN_ROOT)))
+TARGET_TOOLCHAIN_ROOT := $(wildcard $(TARGET_TOOLCHAIN_ROOT))
+$(warning TARGET_TOOLCHAIN_ROOT == $(TARGET_TOOLCHAIN_ROOT))
+endif
+
+# ---------------------------------------------------------------
 # Check that the configuration is current.  We check that
 # BUILD_ENV_SEQUENCE_NUMBER is current against this value.
 # Don't fail if we're called from envsetup, so they have a

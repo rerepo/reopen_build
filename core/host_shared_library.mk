@@ -9,8 +9,8 @@
 
 LOCAL_IS_HOST_MODULE := true
 
-# FIXME: should define in combo
-HOST_SHLIB_SUFFIX := .so
+# FIXED: should define in combo
+#HOST_SHLIB_SUFFIX := .so
 
 ifeq ($(strip $(LOCAL_MODULE_CLASS)),)
 LOCAL_MODULE_CLASS := SHARED_LIBRARIES

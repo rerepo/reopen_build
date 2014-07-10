@@ -40,11 +40,14 @@ all_objects := $(normal_objects) $(gen_o_objects)
 
 # Get the list of BUILT libraries, which are under
 # various intermediates directories.
-# FIXME: should define in combo
-so_suffix := .so
-a_suffix := .a
-#so_suffix := $($(my_prefix)SHLIB_SUFFIX)
-#a_suffix := $($(my_prefix)STATIC_LIB_SUFFIX)
+# FIXED: should define in combo
+#so_suffix := .so
+#a_suffix := .a
+so_suffix := $($(my_prefix)SHLIB_SUFFIX)
+a_suffix := $($(my_prefix)STATIC_LIB_SUFFIX)
+
+$(warning so_suffix == $(so_suffix))
+$(warning a_suffix == $(a_suffix))
 
 built_shared_libraries := \
     $(addprefix $($(my_prefix)OUT_INTERMEDIATE_LIBRARIES)/, \
