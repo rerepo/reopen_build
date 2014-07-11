@@ -7,8 +7,9 @@ stat --format "%s" "$(1)" | tr -d '\n'
 endef
 
 # NOTE: HOST_SHLIB_SUFFIX use by host_shared_library.mk
-HOST_SHLIB_SUFFIX :=
-HOST_EXECUTABLE_SUFFIX :=
+#HOST_SHLIB_SUFFIX :=
+#HOST_EXECUTABLE_SUFFIX :=
+# FIXED: EXECUTABLE_SUFFIX already define in select.mk like $(combo_target)EXECUTABLE_SUFFIX
 
 # Previously the prebiult host toolchain is used only for the sdk build,
 # that's why we have "sdk" in the path name.
