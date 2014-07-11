@@ -38,4 +38,4 @@ include $(BUILD_BINARY)
 $(LOCAL_BUILT_MODULE): $(all_objects) $(all_libraries) $(LOCAL_ADDITIONAL_DEPENDENCIES)
 	@mkdir -p $(dir $@)
 	@echo "host SharedLib: $(PRIVATE_MODULE) ($@)"
-	gcc -o $@ -shared -Wl,-soname,$(notdir $@) $(PRIVATE_ALL_OBJECTS) -Wl,--whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) -Wl,--no-whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) $(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) $(HOST_GLOBAL_LD_DIRS) -Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) -Wl,-rpath,\$$ORIGIN/../lib
+	$(hide) $(PRIVATE_CXX) -o $@ -shared -Wl,-soname,$(notdir $@) $(PRIVATE_ALL_OBJECTS) -Wl,--whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) -Wl,--no-whole-archive $(call normalize-host-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) $(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) $(HOST_GLOBAL_LD_DIRS) -Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) -Wl,-rpath,\$$ORIGIN/../lib

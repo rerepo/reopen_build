@@ -1,6 +1,60 @@
+###########################################################
+## Standard rules for building binary object files from
+## asm/c/cpp/yacc/lex source files.
+##
+## The list of object files is exported in $(all_objects).
+###########################################################
+
 #######################################
 include $(BUILD_BASE_RULES)
 #######################################
+
+###########################################################
+## Define PRIVATE_ variables used by multiple module types
+###########################################################
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_NO_DEFAULT_COMPILER_FLAGS := \
+    $(strip $(LOCAL_NO_DEFAULT_COMPILER_FLAGS))
+
+ifeq ($(strip $(LOCAL_CC)),)
+  ifeq ($(strip $(LOCAL_CLANG)),true)
+    LOCAL_CC := $(CLANG)
+  else
+    LOCAL_CC := $($(my_prefix)CC)
+  endif
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CC := $(LOCAL_CC)
+
+ifeq ($(strip $(LOCAL_CXX)),)
+  ifeq ($(strip $(LOCAL_CLANG)),true)
+    LOCAL_CXX := $(CLANG_CXX)
+  else
+    LOCAL_CXX := $($(my_prefix)CXX)
+  endif
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CXX := $(LOCAL_CXX)
+
+# TODO: support a mix of standard extensions so that this isn't necessary
+LOCAL_CPP_EXTENSION := $(strip $(LOCAL_CPP_EXTENSION))
+ifeq ($(LOCAL_CPP_EXTENSION),)
+  LOCAL_CPP_EXTENSION := .cpp
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPP_EXTENSION := $(LOCAL_CPP_EXTENSION)
+
+# Certain modules like libdl have to have symbols resolved at runtime and blow
+# up if --no-undefined is passed to the linker.
+ifeq ($(strip $(LOCAL_NO_DEFAULT_COMPILER_FLAGS)),)
+ifeq ($(strip $(LOCAL_ALLOW_UNDEFINED_SYMBOLS)),)
+  LOCAL_LDFLAGS := $(LOCAL_LDFLAGS) $($(my_prefix)NO_UNDEFINED_LDFLAGS)
+endif
+endif
+$(warning LOCAL_LDFLAGS == $(LOCAL_LDFLAGS))
+
+# TODO: when static lib occur search loop ???
+ifeq (true,$(LOCAL_GROUP_STATIC_LIBRARIES))
+$(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES := true
+else
+$(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES :=
+endif
 
 ###########################################################
 ## C: Compile .c files to .o.
@@ -111,10 +165,11 @@ all_libraries := \
 $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
 #	@echo '>>> Building file: $<'
 	@mkdir -p $(dir $@)
+# NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
 	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
 #	$(CC) $(CFLAGS) -o $@ -c $<
 #	gcc -o $@ -c $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
-	gcc -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
+	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
 #	gcc -o $@ -c $< -MMD -MP -MF $(patsubst %.o,%.d,$@) -MT $(patsubst %.o,%.d,$@)
 	@echo ' '
 

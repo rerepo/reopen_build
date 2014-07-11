@@ -478,6 +478,7 @@ endef
 # FIXED: should in combo
 #HOST_AR := ar
 #HOST_GLOBAL_ARFLAGS := crsP
+# NOTE: PRIVATE_ARFLAGS no define in build system
 #PRIVATE_ARFLAGS :=
 
 # $(1): the full path of the source static library.
