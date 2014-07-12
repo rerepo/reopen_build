@@ -28,6 +28,30 @@ BUILD_HOST_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
 BUILD_BINARY := $(BUILD_SYSTEM)/binary.mk
 BUILD_BASE_RULES := $(BUILD_SYSTEM)/base_rules.mk
 
+
+# ###############################################################
+# Set common values
+# ###############################################################
+
+# These can be changed to modify both host and device modules.
+#COMMON_GLOBAL_CFLAGS:= -DANDROID -fmessage-length=0 -W -Wall -Wno-unused -Winit-self -Wpointer-arith
+COMMON_GLOBAL_CFLAGS:= -fmessage-length=0 -W -Wall -Winit-self -Wpointer-arith
+COMMON_RELEASE_CFLAGS:= -DNDEBUG -UDEBUG
+
+COMMON_GLOBAL_CPPFLAGS:= $(COMMON_GLOBAL_CFLAGS) -Wsign-promo
+COMMON_RELEASE_CPPFLAGS:= $(COMMON_RELEASE_CFLAGS)
+
+# list of flags to turn specific warnings in to errors
+TARGET_ERROR_FLAGS := -Werror=return-type -Werror=non-virtual-dtor -Werror=address -Werror=sequence-point
+
+# NOTE: GLOBAL_LD_DIRS use by config.mk after include select.mk
+HOST_GLOBAL_LD_DIRS :=
+TARGET_GLOBAL_LD_DIRS :=
+
+HOST_C_INCLUDES :=
+TARGET_C_INCLUDES :=
+
+
 # ---------------------------------------------------------------
 # Define most of the global variables.  These are the ones that
 # are specific to the user's build configuration.
@@ -116,12 +140,45 @@ endif
 endif
 endif
 
+
 # ###############################################################
 # Set up final options.
 # ###############################################################
 
-# FIXME: why aosp use += ???
-HOST_GLOBAL_LD_DIRS := -L$(HOST_OUT_INTERMEDIATE_LIBRARIES)
+HOST_GLOBAL_CFLAGS += $(COMMON_GLOBAL_CFLAGS)
+HOST_RELEASE_CFLAGS += $(COMMON_RELEASE_CFLAGS)
+
+HOST_GLOBAL_CPPFLAGS += $(COMMON_GLOBAL_CPPFLAGS)
+HOST_RELEASE_CPPFLAGS += $(COMMON_RELEASE_CPPFLAGS)
+
+TARGET_GLOBAL_CFLAGS += $(COMMON_GLOBAL_CFLAGS)
+TARGET_RELEASE_CFLAGS += $(COMMON_RELEASE_CFLAGS)
+
+TARGET_GLOBAL_CPPFLAGS += $(COMMON_GLOBAL_CPPFLAGS)
+TARGET_RELEASE_CPPFLAGS += $(COMMON_RELEASE_CPPFLAGS)
+
+# FIXED: why aosp use += ???
+HOST_GLOBAL_LD_DIRS += -L$(HOST_OUT_INTERMEDIATE_LIBRARIES)
+TARGET_GLOBAL_LD_DIRS += -L$(TARGET_OUT_INTERMEDIATE_LIBRARIES)
+
+# FIXME: only HOST_OUT_HEADERS define in envsetup.mk
+HOST_PROJECT_INCLUDES:= $(SRC_HEADERS) $(SRC_HOST_HEADERS) $(HOST_OUT_HEADERS)
+TARGET_PROJECT_INCLUDES:= $(SRC_HEADERS) $(TARGET_OUT_HEADERS) \
+		$(TARGET_DEVICE_KERNEL_HEADERS) $(TARGET_BOARD_KERNEL_HEADERS) \
+		$(TARGET_PRODUCT_KERNEL_HEADERS)
+
+# Many host compilers don't support these flags, so we have to make
+# sure to only specify them for the target compilers checked in to
+# the source tree.
+TARGET_GLOBAL_CFLAGS += $(TARGET_ERROR_FLAGS)
+TARGET_GLOBAL_CPPFLAGS += $(TARGET_ERROR_FLAGS)
+
+HOST_GLOBAL_CFLAGS += $(HOST_RELEASE_CFLAGS)
+HOST_GLOBAL_CPPFLAGS += $(HOST_RELEASE_CPPFLAGS)
+
+TARGET_GLOBAL_CFLAGS += $(TARGET_RELEASE_CFLAGS)
+TARGET_GLOBAL_CPPFLAGS += $(TARGET_RELEASE_CPPFLAGS)
+
 
 # ---------------------------------------------------------------
 # Define for setup

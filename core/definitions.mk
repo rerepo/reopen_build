@@ -455,6 +455,11 @@ define transform-host-c-or-s-to-o-no-deps
 @mkdir -p $(dir $@)
 $(hide) $(PRIVATE_CC) \
 	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(addprefix -isystem ,\
+	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	        $(filter-out $(PRIVATE_C_INCLUDES), \
+	            $(HOST_PROJECT_INCLUDES) \
+	            $(HOST_C_INCLUDES)))) \
 	-c \
 	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
 	    $(HOST_GLOBAL_CFLAGS) \

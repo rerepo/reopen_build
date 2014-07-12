@@ -57,6 +57,21 @@ else
 $(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES :=
 endif
 
+
+###########################################################
+## Define per-module debugging flags.  Users can turn on
+## debugging for a particular module by setting DEBUG_MODULE_ModuleName
+## to a non-empty value in their environment or buildspec.mk,
+## and setting HOST_/TARGET_CUSTOM_DEBUG_CFLAGS to the
+## debug flags that they want to use.
+###########################################################
+ifdef DEBUG_MODULE_$(strip $(LOCAL_MODULE))
+  debug_cflags := $($(my_prefix)CUSTOM_DEBUG_CFLAGS)
+else
+  debug_cflags :=
+endif
+
+
 ###########################################################
 ## C: Compile .c files to .o.
 ###########################################################
@@ -143,6 +158,9 @@ endef
 ###########################################################
 # Rule-specific variable definitions
 ###########################################################
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CFLAGS := $(LOCAL_CFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPPFLAGS := $(LOCAL_CPPFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_DEBUG_CFLAGS := $(debug_cflags)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDFLAGS := $(LOCAL_LDFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
