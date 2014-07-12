@@ -143,6 +143,7 @@ endef
 # Rule-specific variable definitions
 ###########################################################
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
 #$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
 # this is really the way to get the files onto the command line instead
