@@ -53,5 +53,5 @@ HOST_GLOBAL_CFLAGS += -fPIC
 #HOST_GLOBAL_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 # TODO: whether need ???
 
-# FIXME: HOST_NO_UNDEFINED_LDFLAGS should use by binary.mk
+# FIXED: HOST_NO_UNDEFINED_LDFLAGS should use by binary.mk
 HOST_NO_UNDEFINED_LDFLAGS := -Wl,--no-undefined

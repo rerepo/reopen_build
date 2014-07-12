@@ -144,6 +144,7 @@ endef
 # Rule-specific variable definitions
 ###########################################################
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDFLAGS := $(LOCAL_LDFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
 #$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
