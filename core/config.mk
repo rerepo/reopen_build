@@ -3,6 +3,11 @@
 # current configuration and platform, which
 # are not specific to what is being built.
 
+# Utility variables.
+empty :=
+space := $(empty) $(empty)
+comma := ,
+
 # Standard source directories.
 SRC_TARGET_DIR := $(TOPDIR)build/target
 

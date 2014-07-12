@@ -44,6 +44,7 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPP_EXTENSION := $(LOCAL_CPP_EXTENSION)
 # up if --no-undefined is passed to the linker.
 ifeq ($(strip $(LOCAL_NO_DEFAULT_COMPILER_FLAGS)),)
 ifeq ($(strip $(LOCAL_ALLOW_UNDEFINED_SYMBOLS)),)
+# NOTE: when NOT define LOCAL_NO_DEFAULT_COMPILER_FLAGS and LOCAL_ALLOW_UNDEFINED_SYMBOLS
   LOCAL_LDFLAGS := $(LOCAL_LDFLAGS) $($(my_prefix)NO_UNDEFINED_LDFLAGS)
 endif
 endif
@@ -62,7 +63,7 @@ endif
 
 #c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
 c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
-c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
+#c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
 
 #$(warning c_binary == $(c_binary))
 $(warning c_objects == $(c_objects))
@@ -162,16 +163,11 @@ all_libraries := \
     $(built_static_libraries) \
     $(built_whole_libraries)
 
-
+ifneq ($(strip $(c_objects)),)
 $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
-#	@echo '>>> Building file: $<'
-	@mkdir -p $(dir $@)
+	$(transform-$(PRIVATE_HOST)c-to-o)
 # NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
-	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
-#	$(CC) $(CFLAGS) -o $@ -c $<
-#	gcc -o $@ -c $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
-	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
-#	gcc -o $@ -c $< -MMD -MP -MF $(patsubst %.o,%.d,$@) -MT $(patsubst %.o,%.d,$@)
-	@echo ' '
-
--include $(c_deps)
+#	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
+#	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
+-include $(c_objects:%.o=%.d)
+endif
