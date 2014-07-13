@@ -20,6 +20,7 @@ BUILD_COMBOS := $(BUILD_SYSTEM)/combo
 CLEAR_VARS := $(BUILD_SYSTEM)/clear_vars.mk
 BUILD_HOST_STATIC_LIBRARY := $(BUILD_SYSTEM)/host_static_library.mk
 BUILD_HOST_SHARED_LIBRARY := $(BUILD_SYSTEM)/host_shared_library.mk
+BUILD_STATIC_LIBRARY:= $(BUILD_SYSTEM)/static_library.mk
 #BUILD_EXECUTABLE := $(BUILD_SYSTEM)/executable.mk
 BUILD_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
 BUILD_HOST_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
@@ -145,6 +146,7 @@ endif
 # Set up final options.
 # ###############################################################
 
+# NOTE: $(combo_target)GLOBAL_CFLAGS and $(combo_target)RELEASE_CFLAGS init := define in combo/select.mk
 HOST_GLOBAL_CFLAGS += $(COMMON_GLOBAL_CFLAGS)
 HOST_RELEASE_CFLAGS += $(COMMON_RELEASE_CFLAGS)
 

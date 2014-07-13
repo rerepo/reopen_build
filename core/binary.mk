@@ -10,6 +10,36 @@ include $(BUILD_BASE_RULES)
 #######################################
 
 ###########################################################
+## Define PRIVATE_ variables from global vars
+###########################################################
+ifdef LOCAL_SDK_VERSION
+my_target_project_includes :=
+my_target_c_includes := $(my_ndk_stl_include_path) $(my_ndk_version_root)/usr/include
+else
+my_target_project_includes := $(TARGET_PROJECT_INCLUDES)
+my_target_c_includes := $(TARGET_C_INCLUDES)
+endif # LOCAL_SDK_VERSION
+
+ifeq ($(LOCAL_CLANG),true)
+my_target_global_cflags := $(TARGET_GLOBAL_CLANG_FLAGS)
+my_target_c_includes += $(CLANG_CONFIG_EXTRA_TARGET_C_INCLUDES)
+else
+my_target_global_cflags := $(TARGET_GLOBAL_CFLAGS)
+endif # LOCAL_CLANG
+
+ifndef LOCAL_IS_HOST_MODULE
+$(warning my_target_project_includes == $(my_target_project_includes))
+$(warning my_target_c_includes == $(my_target_c_includes))
+$(warning my_target_global_cflags == $(my_target_global_cflags))
+$(warning TARGET_GLOBAL_CPPFLAGS == $(TARGET_GLOBAL_CPPFLAGS))
+endif
+
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_PROJECT_INCLUDES := $(my_target_project_includes)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_C_INCLUDES := $(my_target_c_includes)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS := $(my_target_global_cflags)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CPPFLAGS := $(TARGET_GLOBAL_CPPFLAGS)
+
+###########################################################
 ## Define PRIVATE_ variables used by multiple module types
 ###########################################################
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_NO_DEFAULT_COMPILER_FLAGS := \
