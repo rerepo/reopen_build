@@ -447,6 +447,51 @@ endef
 
 
 ###########################################################
+## Commands for running gcc to compile a host C file
+###########################################################
+
+# $(1): extra flags
+define transform-host-c-or-s-to-o-no-deps
+@mkdir -p $(dir $@)
+$(hide) $(PRIVATE_CC) \
+	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(addprefix -isystem ,\
+	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	        $(filter-out $(PRIVATE_C_INCLUDES), \
+	            $(HOST_PROJECT_INCLUDES) \
+	            $(HOST_C_INCLUDES)))) \
+	-c \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	    $(HOST_GLOBAL_CFLAGS) \
+	) \
+	$(1) \
+	-MMD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+endef
+#	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
+
+define transform-host-c-to-o-no-deps
+@echo "host C: $(PRIVATE_MODULE) <= $<"
+$(call transform-host-c-or-s-to-o-no-deps, $(PRIVATE_CFLAGS) $(PRIVATE_CONLYFLAGS) $(PRIVATE_DEBUG_CFLAGS))
+endef
+
+define transform-host-s-to-o-no-deps
+@echo "host asm: $(PRIVATE_MODULE) <= $<"
+$(call transform-host-c-or-s-to-o-no-deps, $(PRIVATE_ASFLAGS))
+endef
+
+define transform-host-c-to-o
+$(transform-host-c-to-o-no-deps)
+endef
+# TODO: why aosp use [.P] for depend ???
+#$(transform-d-to-p)
+
+define transform-host-s-to-o
+$(transform-host-s-to-o-no-deps)
+$(transform-d-to-p)
+endef
+
+
+###########################################################
 ## Commands for running ar
 ###########################################################
 
@@ -478,6 +523,7 @@ endef
 # FIXED: should in combo
 #HOST_AR := ar
 #HOST_GLOBAL_ARFLAGS := crsP
+# NOTE: PRIVATE_ARFLAGS no define in build system
 #PRIVATE_ARFLAGS :=
 
 # $(1): the full path of the source static library.
@@ -508,6 +554,77 @@ define transform-host-o-to-static-lib
 $(extract-and-include-host-whole-static-libs)
 @echo "host StaticLib: $(PRIVATE_MODULE) ($@)"
 $(call split-long-arguments,$(HOST_AR) $(HOST_GLOBAL_ARFLAGS) $(PRIVATE_ARFLAGS) $@,$(filter %.o, $^))
+endef
+
+
+###########################################################
+## Commands for running gcc to link a shared library or package
+###########################################################
+
+# ld just seems to be so finicky with command order that we allow
+# it to be overriden en-masse see combo/linux-arm.make for an example.
+ifneq ($(HOST_CUSTOM_LD_COMMAND),true)
+define transform-host-o-to-shared-lib-inner
+$(hide) $(PRIVATE_CXX) \
+	-Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	-shared -Wl,-soname,$(notdir $@) \
+	$(PRIVATE_LDFLAGS) \
+	$(HOST_GLOBAL_LD_DIRS) \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	   $(HOST_GLOBAL_LDFLAGS) \
+	) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-host-o-to-shared-lib
+@mkdir -p $(dir $@)
+@echo "host SharedLib: $(PRIVATE_MODULE) ($@)"
+$(transform-host-o-to-shared-lib-inner)
+endef
+
+
+###########################################################
+## Commands for running gcc to link a host executable
+###########################################################
+
+ifneq ($(HOST_CUSTOM_LD_COMMAND),true)
+define transform-host-o-to-executable-inner
+$(hide) $(PRIVATE_CXX) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-host-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-Wl,-rpath-link=$(HOST_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	$(HOST_GLOBAL_LD_DIRS) \
+	$(PRIVATE_LDFLAGS) \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+		$(HOST_GLOBAL_LDFLAGS) \
+	) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-host-o-to-executable
+@mkdir -p $(dir $@)
+@echo "host Executable: $(PRIVATE_MODULE) ($@)"
+$(transform-host-o-to-executable-inner)
 endef
 
 

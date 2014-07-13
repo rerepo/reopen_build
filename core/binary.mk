@@ -1,6 +1,76 @@
+###########################################################
+## Standard rules for building binary object files from
+## asm/c/cpp/yacc/lex source files.
+##
+## The list of object files is exported in $(all_objects).
+###########################################################
+
 #######################################
 include $(BUILD_BASE_RULES)
 #######################################
+
+###########################################################
+## Define PRIVATE_ variables used by multiple module types
+###########################################################
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_NO_DEFAULT_COMPILER_FLAGS := \
+    $(strip $(LOCAL_NO_DEFAULT_COMPILER_FLAGS))
+
+ifeq ($(strip $(LOCAL_CC)),)
+  ifeq ($(strip $(LOCAL_CLANG)),true)
+    LOCAL_CC := $(CLANG)
+  else
+    LOCAL_CC := $($(my_prefix)CC)
+  endif
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CC := $(LOCAL_CC)
+
+ifeq ($(strip $(LOCAL_CXX)),)
+  ifeq ($(strip $(LOCAL_CLANG)),true)
+    LOCAL_CXX := $(CLANG_CXX)
+  else
+    LOCAL_CXX := $($(my_prefix)CXX)
+  endif
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CXX := $(LOCAL_CXX)
+
+# TODO: support a mix of standard extensions so that this isn't necessary
+LOCAL_CPP_EXTENSION := $(strip $(LOCAL_CPP_EXTENSION))
+ifeq ($(LOCAL_CPP_EXTENSION),)
+  LOCAL_CPP_EXTENSION := .cpp
+endif
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPP_EXTENSION := $(LOCAL_CPP_EXTENSION)
+
+# Certain modules like libdl have to have symbols resolved at runtime and blow
+# up if --no-undefined is passed to the linker.
+ifeq ($(strip $(LOCAL_NO_DEFAULT_COMPILER_FLAGS)),)
+ifeq ($(strip $(LOCAL_ALLOW_UNDEFINED_SYMBOLS)),)
+# NOTE: when NOT define LOCAL_NO_DEFAULT_COMPILER_FLAGS and LOCAL_ALLOW_UNDEFINED_SYMBOLS
+  LOCAL_LDFLAGS := $(LOCAL_LDFLAGS) $($(my_prefix)NO_UNDEFINED_LDFLAGS)
+endif
+endif
+$(warning LOCAL_LDFLAGS == $(LOCAL_LDFLAGS))
+
+# TODO: when static lib occur search loop ???
+ifeq (true,$(LOCAL_GROUP_STATIC_LIBRARIES))
+$(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES := true
+else
+$(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES :=
+endif
+
+
+###########################################################
+## Define per-module debugging flags.  Users can turn on
+## debugging for a particular module by setting DEBUG_MODULE_ModuleName
+## to a non-empty value in their environment or buildspec.mk,
+## and setting HOST_/TARGET_CUSTOM_DEBUG_CFLAGS to the
+## debug flags that they want to use.
+###########################################################
+ifdef DEBUG_MODULE_$(strip $(LOCAL_MODULE))
+  debug_cflags := $($(my_prefix)CUSTOM_DEBUG_CFLAGS)
+else
+  debug_cflags :=
+endif
+
 
 ###########################################################
 ## C: Compile .c files to .o.
@@ -8,7 +78,7 @@ include $(BUILD_BASE_RULES)
 
 #c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
 c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
-c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
+#c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
 
 #$(warning c_binary == $(c_binary))
 $(warning c_objects == $(c_objects))
@@ -88,7 +158,12 @@ endef
 ###########################################################
 # Rule-specific variable definitions
 ###########################################################
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CFLAGS := $(LOCAL_CFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPPFLAGS := $(LOCAL_CPPFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_DEBUG_CFLAGS := $(debug_cflags)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDFLAGS := $(LOCAL_LDFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
 #$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
 # this is really the way to get the files onto the command line instead
@@ -107,15 +182,11 @@ all_libraries := \
     $(built_static_libraries) \
     $(built_whole_libraries)
 
-
+ifneq ($(strip $(c_objects)),)
 $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
-#	@echo '>>> Building file: $<'
-	@mkdir -p $(dir $@)
-	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
-#	$(CC) $(CFLAGS) -o $@ -c $<
-#	gcc -o $@ -c $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
-	gcc -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
-#	gcc -o $@ -c $< -MMD -MP -MF $(patsubst %.o,%.d,$@) -MT $(patsubst %.o,%.d,$@)
-	@echo ' '
-
--include $(c_deps)
+	$(transform-$(PRIVATE_HOST)c-to-o)
+# NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
+#	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
+#	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
+-include $(c_objects:%.o=%.d)
+endif

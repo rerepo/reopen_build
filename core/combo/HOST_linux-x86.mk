@@ -35,8 +35,9 @@ HOST_GLOBAL_CFLAGS += -m64
 HOST_GLOBAL_LDFLAGS += -m64
 else
 # We expect SSE3 floating point math.
-HOST_GLOBAL_CFLAGS += -mstackrealign -msse3 -mfpmath=sse -m32
-HOST_GLOBAL_LDFLAGS += -m32
+#HOST_GLOBAL_CFLAGS += -mstackrealign -msse3 -mfpmath=sse -m32
+#HOST_GLOBAL_LDFLAGS += -m32
+# TODO: what we define global flags ???
 endif # BUILD_HOST_64bit
 
 ifneq ($(strip $(BUILD_HOST_static)),)
@@ -44,13 +45,13 @@ ifneq ($(strip $(BUILD_HOST_static)),)
 HOST_GLOBAL_LDFLAGS += -static
 endif # BUILD_HOST_static
 
-# FIXME: HOST_GLOBAL_CFLAGS should use by definitions.mk
-#HOST_GLOBAL_CFLAGS += -fPIC \
-    -include $(call select-android-config-h,linux-x86)
+# FIXED: HOST_GLOBAL_CFLAGS should use by definitions.mk
+HOST_GLOBAL_CFLAGS += -fPIC
+#    -include $(call select-android-config-h,linux-x86)
 
 # Disable new longjmp in glibc 2.11 and later. See bug 2967937.
 #HOST_GLOBAL_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0
 # TODO: whether need ???
 
-# FIXME: HOST_NO_UNDEFINED_LDFLAGS should use by binary.mk
+# FIXED: HOST_NO_UNDEFINED_LDFLAGS should use by binary.mk
 HOST_NO_UNDEFINED_LDFLAGS := -Wl,--no-undefined
