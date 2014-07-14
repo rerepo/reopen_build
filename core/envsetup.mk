@@ -99,6 +99,13 @@ else
   HOST_PREBUILT_TAG := $(HOST_OS)-$(HOST_ARCH)
 endif
 
+# TARGET_COPY_OUT_* are all relative to the staging directory, ie PRODUCT_OUT.
+# Define them here so they can be used in product config files.
+TARGET_COPY_OUT_SYSTEM := system
+TARGET_COPY_OUT_DATA := data
+TARGET_COPY_OUT_VENDOR := system/vendor
+TARGET_COPY_OUT_ROOT := root
+TARGET_COPY_OUT_RECOVERY := recovery
 
 # Read the product specs so we an get TARGET_DEVICE and other
 # variables that we need in order to locate the output files.
@@ -191,6 +198,10 @@ TARGET_OUT_KEYCHARS := $(TARGET_OUT)/usr/keychars
 TARGET_OUT_ETC := $(TARGET_OUT)/etc
 TARGET_OUT_NOTICE_FILES:=$(TARGET_OUT_INTERMEDIATES)/NOTICE_FILES
 TARGET_OUT_FAKE := $(PRODUCT_OUT)/fake_packages
+
+TARGET_OUT_UNSTRIPPED := $(PRODUCT_OUT)/symbols
+TARGET_OUT_EXECUTABLES_UNSTRIPPED := $(TARGET_OUT_UNSTRIPPED)/system/bin
+TARGET_OUT_SHARED_LIBRARIES_UNSTRIPPED := $(TARGET_OUT_UNSTRIPPED)/system/lib
 
 # TODO: define common dir
 # NOTE: use for mk func intermediates-dir-for() in definitions.mk

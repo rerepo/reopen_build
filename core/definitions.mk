@@ -670,6 +670,67 @@ endef
 
 
 ###########################################################
+## Commands for running gcc to link a shared library or package
+###########################################################
+
+#echo >$@.vers "{"; \
+#echo >>$@.vers " global:"; \
+#$(BUILD_SYSTEM)/filter_symbols.sh $(TARGET_NM) "  " ";" $(filter %.o,$^) | sort -u >>$@.vers; \
+#echo >>$@.vers " local:"; \
+#echo >>$@.vers "  *;"; \
+#echo >>$@.vers "};"; \
+
+#	-Wl,--version-script=$@.vers \
+
+# ld just seems to be so finicky with command order that we allow
+# it to be overriden en-masse see combo/linux-arm.make for an example.
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-shared-lib-inner
+$(hide) $(PRIVATE_CXX) \
+	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
+	-Wl,-rpath-link=$(TARGET_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	-shared -Wl,-soname,$(notdir $@) \
+	$(PRIVATE_LDFLAGS) \
+	$(PRIVATE_TARGET_GLOBAL_LD_DIRS) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-o-to-shared-lib
+@mkdir -p $(dir $@)
+@echo "target SharedLib: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-shared-lib-inner)
+endef
+
+define transform-o-to-package
+@mkdir -p $(dir $@)
+@echo "target Package: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-shared-lib-inner)
+endef
+
+
+###########################################################
+## Commands for filtering a target executable or library
+###########################################################
+
+define transform-to-stripped
+@mkdir -p $(dir $@)
+@echo "target Strip: $(PRIVATE_MODULE) ($@)"
+$(hide) $(TARGET_STRIP_COMMAND)
+endef
+
+
+###########################################################
 ## Commands for running gcc to link a host executable
 ###########################################################
 

@@ -55,6 +55,7 @@ $(warning TARGET_STRIP_COMMAND == $(TARGET_STRIP_COMMAND))
 
 ifneq ($(wildcard $(TARGET_CC)),)
 # NOTE: TARGET_LIBGCC use by core/shared_library.mk and core/executable.mk
+# then cmd PRIVATE_TARGET_LIBGCC define in current makefile
 TARGET_LIBGCC := \
 	$(shell $(TARGET_CC) -m32 -print-file-name=libgcc.a)
 $(warning TARGET_LIBGCC == $(TARGET_LIBGCC))
@@ -177,12 +178,15 @@ TARGET_CRTEND_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtend_android.o
 TARGET_CRTBEGIN_SO_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtbegin_so.o
 TARGET_CRTEND_SO_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtend_so.o
 
+# NOTE: TARGET_STRIP_MODULE use by dynamic_binary.mk
 TARGET_STRIP_MODULE:=true
 
 # NOTE: TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES use by binary.mk
 TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES := libc libstdc++ libm
 
-TARGET_CUSTOM_LD_COMMAND := true
+TARGET_CUSTOM_LD_COMMAND := false
+
+ifeq ($(TARGET_CUSTOM_LD_COMMAND),true)
 define transform-o-to-shared-lib-inner
 $(hide) $(PRIVATE_CXX) \
 	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
@@ -249,6 +253,7 @@ $(hide) $(PRIVATE_CXX) \
 	-Wl,--end-group \
 	$(if $(filter true,$(PRIVATE_NO_CRT)),,$(PRIVATE_TARGET_CRTEND_O))
 endef
+endif # TARGET_CUSTOM_LD_COMMAND
 
 # Special check for x86 NDK ABI compatibility.
 # The TARGET_CPU_ABI variable should be defined in BoardConfig.mk to 'x86'

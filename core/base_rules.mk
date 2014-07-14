@@ -97,9 +97,9 @@ built_module_path :=
 
 $(warning LOCAL_BUILT_MODULE == $(LOCAL_BUILT_MODULE))
 
+# TODO: whether LOCAL_UNINSTALLABLE_MODULE work well ???
 ifneq (true,$(LOCAL_UNINSTALLABLE_MODULE))
   LOCAL_INSTALLED_MODULE := $(LOCAL_MODULE_PATH)/$(LOCAL_INSTALLED_MODULE_STEM)
-  $(warning LOCAL_INSTALLED_MODULE == $(LOCAL_INSTALLED_MODULE))
 endif
 
 # Assemble the list of targets to create PRIVATE_ variables for.
@@ -158,7 +158,7 @@ ifndef LOCAL_UNINSTALLABLE_MODULE
   # Define a copy rule to install the module.
   # acp and libraries that it uses can't use acp for
   # installation;  hence, LOCAL_ACP_UNAVAILABLE.
-
+$(warning LOCAL_INSTALLED_MODULE == $(LOCAL_INSTALLED_MODULE))
 $(LOCAL_INSTALLED_MODULE): $(LOCAL_BUILT_MODULE)
 	@echo "Install: $@"
 	$(copy-file-to-target-with-cp)

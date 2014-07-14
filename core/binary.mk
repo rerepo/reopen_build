@@ -5,6 +5,39 @@
 ## The list of object files is exported in $(all_objects).
 ###########################################################
 
+##################################################
+# Compute the dependency of the shared libraries
+##################################################
+# On the target, we compile with -nostdlib, so we must add in the
+# default system shared libraries, unless they have requested not
+# to by supplying a LOCAL_SYSTEM_SHARED_LIBRARIES value.  One would
+# supply that, for example, when building libc itself.
+ifdef LOCAL_IS_HOST_MODULE
+  ifeq ($(LOCAL_SYSTEM_SHARED_LIBRARIES),none)
+      LOCAL_SYSTEM_SHARED_LIBRARIES :=
+  endif
+else
+  ifeq ($(LOCAL_SYSTEM_SHARED_LIBRARIES),none)
+      LOCAL_SYSTEM_SHARED_LIBRARIES := $(TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES)
+  endif
+endif
+
+ifdef LOCAL_SDK_VERSION
+  # Get the list of INSTALLED libraries as module names.
+  # We cannot compute the full path of the LOCAL_SHARED_LIBRARIES for
+  # they may cusomize their install path with LOCAL_MODULE_PATH
+  installed_shared_library_module_names := \
+      $(LOCAL_SHARED_LIBRARIES)
+else
+  installed_shared_library_module_names := \
+      $(LOCAL_SYSTEM_SHARED_LIBRARIES) $(LOCAL_SHARED_LIBRARIES)
+endif
+installed_shared_library_module_names := $(sort $(installed_shared_library_module_names))
+# TODO: The real dependency and Import includes
+ifndef LOCAL_IS_HOST_MODULE
+$(warning installed_shared_library_module_names == $(installed_shared_library_module_names))
+endif
+
 #######################################
 include $(BUILD_BASE_RULES)
 #######################################
