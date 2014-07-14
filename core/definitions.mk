@@ -731,6 +731,58 @@ endef
 
 
 ###########################################################
+## Commands for running gcc to link an executable
+###########################################################
+
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-executable-inner
+$(hide) $(PRIVATE_CXX) \
+	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
+	$(PRIVATE_TARGET_GLOBAL_LD_DIRS) \
+	-Wl,-rpath-link=$(TARGET_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	$(PRIVATE_LDFLAGS) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-o-to-executable
+@mkdir -p $(dir $@)
+@echo "target Executable: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-executable-inner)
+endef
+
+
+###########################################################
+## Commands for running gcc to link a statically linked
+## executable.  In practice, we only use this on arm, so
+## the other platforms don't have the
+## transform-o-to-static-executable defined
+###########################################################
+
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-static-executable-inner
+@echo "Error: transform-o-to-static-executable-inner no define"
+endef
+endif
+
+define transform-o-to-static-executable
+@mkdir -p $(dir $@)
+@echo "target StaticExecutable: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-static-executable-inner)
+endef
+
+
+###########################################################
 ## Commands for running gcc to link a host executable
 ###########################################################
 

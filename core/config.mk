@@ -22,8 +22,7 @@ BUILD_HOST_STATIC_LIBRARY := $(BUILD_SYSTEM)/host_static_library.mk
 BUILD_HOST_SHARED_LIBRARY := $(BUILD_SYSTEM)/host_shared_library.mk
 BUILD_STATIC_LIBRARY:= $(BUILD_SYSTEM)/static_library.mk
 BUILD_SHARED_LIBRARY:= $(BUILD_SYSTEM)/shared_library.mk
-#BUILD_EXECUTABLE := $(BUILD_SYSTEM)/executable.mk
-BUILD_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
+BUILD_EXECUTABLE := $(BUILD_SYSTEM)/executable.mk
 BUILD_HOST_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
 
 # Internal makefile invoked by above
