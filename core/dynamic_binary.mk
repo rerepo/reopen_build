@@ -147,5 +147,8 @@ endif # LOCAL_STRIP_MODULE
 
 $(cleantarget): PRIVATE_CLEAN_FILES += \
     $(linked_module) \
-    $(symbolic_output) \
-    $(compress_output)
+    $(symbolic_output)
+
+ifeq ($(LOCAL_COMPRESS_MODULE_SYMBOLS),true)
+$(cleantarget): PRIVATE_CLEAN_FILES += $(compress_output)
+endif
