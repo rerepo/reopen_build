@@ -140,8 +140,14 @@ endif
 ###########################################################
 
 #c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
-c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
+#c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
 #c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
+
+# NOTE: must filter %.c otherwise strip prebuilt module will become object
+c_normal_sources := $(filter %.c,$(LOCAL_SRC_FILES))
+c_normal_objects := $(addprefix $(intermediates)/,$(c_normal_sources:.c=.o))
+
+c_objects        := $(c_arm_objects) $(c_normal_objects)
 
 #$(warning c_binary == $(c_binary))
 $(warning c_objects == $(c_objects))

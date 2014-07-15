@@ -24,6 +24,9 @@ BUILD_STATIC_LIBRARY:= $(BUILD_SYSTEM)/static_library.mk
 BUILD_SHARED_LIBRARY:= $(BUILD_SYSTEM)/shared_library.mk
 BUILD_EXECUTABLE := $(BUILD_SYSTEM)/executable.mk
 BUILD_HOST_EXECUTABLE := $(BUILD_SYSTEM)/host_executable.mk
+BUILD_HOST_PREBUILT:= $(BUILD_SYSTEM)/host_prebuilt.mk
+BUILD_PREBUILT:= $(BUILD_SYSTEM)/prebuilt.mk
+BUILD_MULTI_PREBUILT:= $(BUILD_SYSTEM)/multi_prebuilt.mk
 
 # Internal makefile invoked by above
 BUILD_BINARY := $(BUILD_SYSTEM)/binary.mk
