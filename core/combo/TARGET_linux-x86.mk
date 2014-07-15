@@ -55,6 +55,7 @@ $(warning TARGET_STRIP_COMMAND == $(TARGET_STRIP_COMMAND))
 
 ifneq ($(wildcard $(TARGET_CC)),)
 # NOTE: TARGET_LIBGCC use by core/shared_library.mk and core/executable.mk
+# then cmd PRIVATE_TARGET_LIBGCC define in current makefile
 TARGET_LIBGCC := \
 	$(shell $(TARGET_CC) -m32 -print-file-name=libgcc.a)
 $(warning TARGET_LIBGCC == $(TARGET_LIBGCC))
@@ -84,8 +85,12 @@ $(warning KERNEL_HEADERS == $(KERNEL_HEADERS))
 # FIXME
 #android_config_h := $(call select-android-config-h,target_linux-x86)
 
-#TARGET_GLOBAL_CFLAGS += \
-			-O2 \
+TARGET_GLOBAL_CFLAGS += \
+			-Werror=format-security \
+			-fPIC -fPIE \
+			-ffunction-sections \
+			-fstack-protector
+#			-O2 \
 			-Ulinux \
 			-Wa,--noexecstack \
 			-Werror=format-security \
@@ -105,14 +110,15 @@ $(warning KERNEL_HEADERS == $(KERNEL_HEADERS))
 			-I $(dir $(android_config_h))
 
 # XXX: Not sure this is still needed. Must check with our toolchains.
-TARGET_GLOBAL_CPPFLAGS += \
+#TARGET_GLOBAL_CPPFLAGS += \
 			-fno-use-cxa-atexit
 
 # XXX: Our toolchain is normally configured to always set these flags by default
 # however, there have been reports that this is sometimes not the case. So make
 # them explicit here unless we have the time to carefully check it
 #
-TARGET_GLOBAL_CFLAGS += -mstackrealign -msse3 -mfpmath=sse -m32
+#TARGET_GLOBAL_CFLAGS += -mstackrealign -msse3 -mfpmath=sse -m32
+# TODO: what we define global flags ???
 
 # XXX: These flags should not be defined here anymore. Instead, the Android.mk
 # of the modules that depend on these features should instead check the
@@ -130,7 +136,7 @@ endif
 # XXX: This flag is probably redundant. I believe our toolchain always sets
 # it by default. Consider for removal.
 #
-TARGET_GLOBAL_CFLAGS += -mbionic
+#TARGET_GLOBAL_CFLAGS += -mbionic
 
 # XXX: This flag is probably redundant. The macro should be defined by our
 # toolchain binaries automatically (as a compiler built-in).
@@ -138,22 +144,23 @@ TARGET_GLOBAL_CFLAGS += -mbionic
 #
 # Consider for removal.
 #
-TARGET_GLOBAL_CFLAGS += -D__ANDROID__
+#TARGET_GLOBAL_CFLAGS += -D__ANDROID__
 $(warning TARGET_GLOBAL_CFLAGS == $(TARGET_GLOBAL_CFLAGS))
 
 # XXX: This flag is probably redundant since our toolchain binaries already
 # generate 32-bit machine code. It probably dates back to the old days
 # where we were using the host toolchain on Linux to build the platform
 # images. Consider it for removal.
-TARGET_GLOBAL_LDFLAGS += -m32
+#TARGET_GLOBAL_LDFLAGS += -m32
 
-TARGET_GLOBAL_LDFLAGS += -Wl,-z,noexecstack
-TARGET_GLOBAL_LDFLAGS += -Wl,-z,relro -Wl,-z,now
-TARGET_GLOBAL_LDFLAGS += -Wl,--warn-shared-textrel
+#TARGET_GLOBAL_LDFLAGS += -Wl,-z,noexecstack
+#TARGET_GLOBAL_LDFLAGS += -Wl,-z,relro -Wl,-z,now
+#TARGET_GLOBAL_LDFLAGS += -Wl,--warn-shared-textrel
 TARGET_GLOBAL_LDFLAGS += -Wl,--gc-sections
 $(warning TARGET_GLOBAL_LDFLAGS == $(TARGET_GLOBAL_LDFLAGS))
 
-TARGET_C_INCLUDES := \
+# TODO: what we define TARGET_C_INCLUDES ???
+#TARGET_C_INCLUDES := \
 	$(libc_root)/arch-x86/include \
 	$(libc_root)/include \
 	$(libstdc++_root)/include \
@@ -171,11 +178,15 @@ TARGET_CRTEND_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtend_android.o
 TARGET_CRTBEGIN_SO_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtbegin_so.o
 TARGET_CRTEND_SO_O := $(TARGET_OUT_INTERMEDIATE_LIBRARIES)/crtend_so.o
 
+# NOTE: TARGET_STRIP_MODULE use by dynamic_binary.mk
 TARGET_STRIP_MODULE:=true
 
+# NOTE: TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES use by binary.mk
 TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES := libc libstdc++ libm
 
-TARGET_CUSTOM_LD_COMMAND := true
+TARGET_CUSTOM_LD_COMMAND := false
+
+ifeq ($(TARGET_CUSTOM_LD_COMMAND),true)
 define transform-o-to-shared-lib-inner
 $(hide) $(PRIVATE_CXX) \
 	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
@@ -242,6 +253,7 @@ $(hide) $(PRIVATE_CXX) \
 	-Wl,--end-group \
 	$(if $(filter true,$(PRIVATE_NO_CRT)),,$(PRIVATE_TARGET_CRTEND_O))
 endef
+endif # TARGET_CUSTOM_LD_COMMAND
 
 # Special check for x86 NDK ABI compatibility.
 # The TARGET_CPU_ABI variable should be defined in BoardConfig.mk to 'x86'

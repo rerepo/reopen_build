@@ -447,6 +447,52 @@ endef
 
 
 ###########################################################
+## Commands for running gcc to compile a C file
+###########################################################
+
+# $(1): extra flags
+define transform-c-or-s-to-o-no-deps
+@mkdir -p $(dir $@)
+$(hide) $(PRIVATE_CC) \
+	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(addprefix -isystem ,\
+	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	        $(filter-out $(PRIVATE_C_INCLUDES), \
+	            $(PRIVATE_TARGET_PROJECT_INCLUDES) \
+	            $(PRIVATE_TARGET_C_INCLUDES)))) \
+	-c \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	    $(PRIVATE_TARGET_GLOBAL_CFLAGS) \
+	    $(PRIVATE_ARM_CFLAGS) \
+	 ) \
+	 $(1) \
+	-MMD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+endef
+#	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
+# TODO: PRIVATE_ARM_CFLAGS should define in binary.mk
+
+define transform-c-to-o-no-deps
+@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
+$(call transform-c-or-s-to-o-no-deps, $(PRIVATE_CFLAGS) $(PRIVATE_CONLYFLAGS) $(PRIVATE_DEBUG_CFLAGS))
+endef
+
+define transform-s-to-o-no-deps
+@echo "target asm: $(PRIVATE_MODULE) <= $<"
+$(call transform-c-or-s-to-o-no-deps, $(PRIVATE_ASFLAGS))
+endef
+
+define transform-c-to-o
+$(transform-c-to-o-no-deps)
+endef
+#$(transform-d-to-p)
+
+define transform-s-to-o
+$(transform-s-to-o-no-deps)
+$(transform-d-to-p)
+endef
+
+
+###########################################################
 ## Commands for running gcc to compile a host C file
 ###########################################################
 
@@ -515,6 +561,35 @@ $(call _concat-if-arg2-not-empty,$(1),$(wordlist 2501,3000,$(2)))
 $(call _concat-if-arg2-not-empty,$(1),$(wordlist 3001,99999,$(2)))
 endef
 
+# $(1): the full path of the source static library.
+define _extract-and-include-single-target-whole-static-lib
+@echo "preparing StaticLib: $(PRIVATE_MODULE) [including $(1)]"
+$(hide) ldir=$(PRIVATE_INTERMEDIATES_DIR)/WHOLE/$(basename $(notdir $(1)))_objs;\
+    rm -rf $$ldir; \
+    mkdir -p $$ldir; \
+    filelist=; \
+    for f in `$(TARGET_AR) t $(1)`; do \
+        $(TARGET_AR) p $(1) $$f > $$ldir/$$f; \
+        filelist="$$filelist $$ldir/$$f"; \
+    done ; \
+    $(TARGET_AR) $(TARGET_GLOBAL_ARFLAGS) $(PRIVATE_ARFLAGS) $@ $$filelist
+
+endef
+
+define extract-and-include-target-whole-static-libs
+$(foreach lib,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES), \
+    $(call _extract-and-include-single-target-whole-static-lib, $(lib)))
+endef
+
+# Explicitly delete the archive first so that ar doesn't
+# try to add to an existing archive.
+define transform-o-to-static-lib
+@mkdir -p $(dir $@)
+@rm -f $@
+$(extract-and-include-target-whole-static-libs)
+@echo "target StaticLib: $(PRIVATE_MODULE) ($@)"
+$(call split-long-arguments,$(TARGET_AR) $(TARGET_GLOBAL_ARFLAGS) $(PRIVATE_ARFLAGS) $@,$(filter %.o, $^))
+endef
 
 ###########################################################
 ## Commands for running host ar
@@ -591,6 +666,119 @@ define transform-host-o-to-shared-lib
 @mkdir -p $(dir $@)
 @echo "host SharedLib: $(PRIVATE_MODULE) ($@)"
 $(transform-host-o-to-shared-lib-inner)
+endef
+
+
+###########################################################
+## Commands for running gcc to link a shared library or package
+###########################################################
+
+#echo >$@.vers "{"; \
+#echo >>$@.vers " global:"; \
+#$(BUILD_SYSTEM)/filter_symbols.sh $(TARGET_NM) "  " ";" $(filter %.o,$^) | sort -u >>$@.vers; \
+#echo >>$@.vers " local:"; \
+#echo >>$@.vers "  *;"; \
+#echo >>$@.vers "};"; \
+
+#	-Wl,--version-script=$@.vers \
+
+# ld just seems to be so finicky with command order that we allow
+# it to be overriden en-masse see combo/linux-arm.make for an example.
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-shared-lib-inner
+$(hide) $(PRIVATE_CXX) \
+	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
+	-Wl,-rpath-link=$(TARGET_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	-shared -Wl,-soname,$(notdir $@) \
+	$(PRIVATE_LDFLAGS) \
+	$(PRIVATE_TARGET_GLOBAL_LD_DIRS) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-o-to-shared-lib
+@mkdir -p $(dir $@)
+@echo "target SharedLib: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-shared-lib-inner)
+endef
+
+define transform-o-to-package
+@mkdir -p $(dir $@)
+@echo "target Package: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-shared-lib-inner)
+endef
+
+
+###########################################################
+## Commands for filtering a target executable or library
+###########################################################
+
+define transform-to-stripped
+@mkdir -p $(dir $@)
+@echo "target Strip: $(PRIVATE_MODULE) ($@)"
+$(hide) $(TARGET_STRIP_COMMAND)
+endef
+
+
+###########################################################
+## Commands for running gcc to link an executable
+###########################################################
+
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-executable-inner
+$(hide) $(PRIVATE_CXX) \
+	$(PRIVATE_TARGET_GLOBAL_LDFLAGS) \
+	$(PRIVATE_TARGET_GLOBAL_LD_DIRS) \
+	-Wl,-rpath-link=$(TARGET_OUT_INTERMEDIATE_LIBRARIES) \
+	-Wl,-rpath,\$$ORIGIN/../lib \
+	$(PRIVATE_LDFLAGS) \
+	$(PRIVATE_ALL_OBJECTS) \
+	-Wl,--whole-archive \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES)) \
+	-Wl,--no-whole-archive \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--start-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_STATIC_LIBRARIES)) \
+	$(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
+	$(call normalize-target-libraries,$(PRIVATE_ALL_SHARED_LIBRARIES)) \
+	-o $@ \
+	$(PRIVATE_LDLIBS)
+endef
+endif
+
+define transform-o-to-executable
+@mkdir -p $(dir $@)
+@echo "target Executable: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-executable-inner)
+endef
+
+
+###########################################################
+## Commands for running gcc to link a statically linked
+## executable.  In practice, we only use this on arm, so
+## the other platforms don't have the
+## transform-o-to-static-executable defined
+###########################################################
+
+ifneq ($(TARGET_CUSTOM_LD_COMMAND),true)
+define transform-o-to-static-executable-inner
+@echo "Error: transform-o-to-static-executable-inner no define"
+endef
+endif
+
+define transform-o-to-static-executable
+@mkdir -p $(dir $@)
+@echo "target StaticExecutable: $(PRIVATE_MODULE) ($@)"
+$(transform-o-to-static-executable-inner)
 endef
 
 

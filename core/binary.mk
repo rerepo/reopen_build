@@ -5,9 +5,72 @@
 ## The list of object files is exported in $(all_objects).
 ###########################################################
 
+##################################################
+# Compute the dependency of the shared libraries
+##################################################
+# On the target, we compile with -nostdlib, so we must add in the
+# default system shared libraries, unless they have requested not
+# to by supplying a LOCAL_SYSTEM_SHARED_LIBRARIES value.  One would
+# supply that, for example, when building libc itself.
+ifdef LOCAL_IS_HOST_MODULE
+  ifeq ($(LOCAL_SYSTEM_SHARED_LIBRARIES),none)
+      LOCAL_SYSTEM_SHARED_LIBRARIES :=
+  endif
+else
+  ifeq ($(LOCAL_SYSTEM_SHARED_LIBRARIES),none)
+      LOCAL_SYSTEM_SHARED_LIBRARIES := $(TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES)
+  endif
+endif
+
+ifdef LOCAL_SDK_VERSION
+  # Get the list of INSTALLED libraries as module names.
+  # We cannot compute the full path of the LOCAL_SHARED_LIBRARIES for
+  # they may cusomize their install path with LOCAL_MODULE_PATH
+  installed_shared_library_module_names := \
+      $(LOCAL_SHARED_LIBRARIES)
+else
+  installed_shared_library_module_names := \
+      $(LOCAL_SYSTEM_SHARED_LIBRARIES) $(LOCAL_SHARED_LIBRARIES)
+endif
+installed_shared_library_module_names := $(sort $(installed_shared_library_module_names))
+# TODO: The real dependency and Import includes
+ifndef LOCAL_IS_HOST_MODULE
+$(warning installed_shared_library_module_names == $(installed_shared_library_module_names))
+endif
+
 #######################################
 include $(BUILD_BASE_RULES)
 #######################################
+
+###########################################################
+## Define PRIVATE_ variables from global vars
+###########################################################
+ifdef LOCAL_SDK_VERSION
+my_target_project_includes :=
+my_target_c_includes := $(my_ndk_stl_include_path) $(my_ndk_version_root)/usr/include
+else
+my_target_project_includes := $(TARGET_PROJECT_INCLUDES)
+my_target_c_includes := $(TARGET_C_INCLUDES)
+endif # LOCAL_SDK_VERSION
+
+ifeq ($(LOCAL_CLANG),true)
+my_target_global_cflags := $(TARGET_GLOBAL_CLANG_FLAGS)
+my_target_c_includes += $(CLANG_CONFIG_EXTRA_TARGET_C_INCLUDES)
+else
+my_target_global_cflags := $(TARGET_GLOBAL_CFLAGS)
+endif # LOCAL_CLANG
+
+ifndef LOCAL_IS_HOST_MODULE
+$(warning my_target_project_includes == $(my_target_project_includes))
+$(warning my_target_c_includes == $(my_target_c_includes))
+$(warning my_target_global_cflags == $(my_target_global_cflags))
+$(warning TARGET_GLOBAL_CPPFLAGS == $(TARGET_GLOBAL_CPPFLAGS))
+endif
+
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_PROJECT_INCLUDES := $(my_target_project_includes)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_C_INCLUDES := $(my_target_c_includes)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS := $(my_target_global_cflags)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CPPFLAGS := $(TARGET_GLOBAL_CPPFLAGS)
 
 ###########################################################
 ## Define PRIVATE_ variables used by multiple module types
