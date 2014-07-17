@@ -853,6 +853,17 @@ endef
 
 
 ###########################################################
+## Stuff source generated from one-off tools
+###########################################################
+
+define transform-generated-source
+@echo "target Generated: $(PRIVATE_MODULE) <= $<"
+@mkdir -p $(dir $@)
+$(hide) $(PRIVATE_CUSTOM_TOOL)
+endef
+
+
+###########################################################
 ## Dump the variables that are associated with targets
 ###########################################################
 
