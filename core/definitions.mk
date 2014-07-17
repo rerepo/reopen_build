@@ -455,6 +455,7 @@ define transform-c-or-s-to-o-no-deps
 @mkdir -p $(dir $@)
 $(hide) $(PRIVATE_CC) \
 	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(shell cat $(PRIVATE_IMPORT_INCLUDES)) \
 	$(addprefix -isystem ,\
 	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
 	        $(filter-out $(PRIVATE_C_INCLUDES), \
@@ -501,6 +502,7 @@ define transform-host-c-or-s-to-o-no-deps
 @mkdir -p $(dir $@)
 $(hide) $(PRIVATE_CC) \
 	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(shell cat $(PRIVATE_IMPORT_INCLUDES)) \
 	$(addprefix -isystem ,\
 	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
 	        $(filter-out $(PRIVATE_C_INCLUDES), \
@@ -829,6 +831,26 @@ define copy-file-to-target-with-cp
 @mkdir -p $(dir $@)
 $(hide) cp -fp $< $@
 endef
+
+# Copy a prebuilt file to a target location.
+define transform-prebuilt-to-target-with-cp
+@echo "$(if $(PRIVATE_IS_HOST_MODULE),host,target) Prebuilt: $(PRIVATE_MODULE) ($@)"
+$(copy-file-to-target-with-cp)
+endef
+
+# The same as copy-file-to-target, but strip out "# comment"-style
+# comments (for config files and such).
+define copy-file-to-target-strip-comments
+@mkdir -p $(dir $@)
+$(hide) sed -e 's/#.*$$//' -e 's/[ \t]*$$//' -e '/^$$/d' < $< > $@
+endef
+
+# Copy a prebuilt file to a target location, stripping "# comment" comments.
+define transform-prebuilt-to-target-strip-comments
+@echo "$(if $(PRIVATE_IS_HOST_MODULE),host,target) Prebuilt: $(PRIVATE_MODULE) ($@)"
+$(copy-file-to-target-strip-comments)
+endef
+
 
 ###########################################################
 ## Dump the variables that are associated with targets

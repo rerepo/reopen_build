@@ -22,6 +22,7 @@ else
   endif
 endif
 
+# TODO: what relation with LOCAL_SDK_VERSION and TARGET_DEFAULT_SYSTEM_SHARED_LIBRARIES ???
 ifdef LOCAL_SDK_VERSION
   # Get the list of INSTALLED libraries as module names.
   # We cannot compute the full path of the LOCAL_SHARED_LIBRARIES for
@@ -140,12 +141,49 @@ endif
 ###########################################################
 
 #c_binary := $(LOCAL_PATH)/$(LOCAL_MODULE)
-c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
+#c_objects := $(patsubst %.c,$(intermediates)/%.o,$(LOCAL_SRC_FILES))
 #c_deps := $(patsubst %.c,$(intermediates)/%.d,$(LOCAL_SRC_FILES))
+
+# NOTE: must filter %.c otherwise strip prebuilt module will become object
+c_normal_sources := $(filter %.c,$(LOCAL_SRC_FILES))
+c_normal_objects := $(addprefix $(intermediates)/,$(c_normal_sources:.c=.o))
+
+c_objects        := $(c_arm_objects) $(c_normal_objects)
 
 #$(warning c_binary == $(c_binary))
 $(warning c_objects == $(c_objects))
 #$(warning c_deps == $(c_deps))
+
+ifneq ($(strip $(c_objects)),)
+$(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
+	$(transform-$(PRIVATE_HOST)c-to-o)
+# NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
+#	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
+#	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
+-include $(c_objects:%.o=%.d)
+endif
+
+
+####################################################
+## Import includes
+####################################################
+import_includes := $(intermediates)/import_includes
+import_includes_deps := $(strip \
+    $(foreach l, $(installed_shared_library_module_names), \
+      $(call intermediates-dir-for,SHARED_LIBRARIES,$(l),$(LOCAL_IS_HOST_MODULE))/export_includes) \
+    $(foreach l, $(LOCAL_STATIC_LIBRARIES) $(LOCAL_WHOLE_STATIC_LIBRARIES), \
+      $(call intermediates-dir-for,STATIC_LIBRARIES,$(l),$(LOCAL_IS_HOST_MODULE))/export_includes))
+$(import_includes) : $(import_includes_deps)
+	@echo Import includes file: $@
+	$(hide) mkdir -p $(dir $@) && rm -f $@
+ifdef import_includes_deps
+	$(hide) for f in $^; do \
+	  cat $$f >> $@; \
+	done
+else
+	$(hide) touch $@
+endif
+
 
 ###########################################################
 ## Common object handling.
@@ -161,11 +199,22 @@ normal_objects := $(c_objects)
 #    $(c_objects) \
 #    $(gen_c_objects) \
 #    $(addprefix $(TOPDIR)$(LOCAL_PATH)/,$(LOCAL_PREBUILT_OBJ_FILES))
+# TODO: PREBUILT_OBJ_FILES ???
 
 all_objects := $(normal_objects) $(gen_o_objects)
 
 # FIXME: whether current include ???
 #LOCAL_C_INCLUDES += $(TOPDIR)$(LOCAL_PATH) $(intermediates)
+
+# all_objects includes gen_o_objects which were part of LOCAL_GENERATED_SOURCES;
+# use normal_objects here to avoid creating circular dependencies. This assumes
+# that custom build rules which generate .o files don't consume other generated
+# sources as input (or if they do they take care of that dependency themselves).
+$(normal_objects) : | $(LOCAL_GENERATED_SOURCES)
+$(all_objects) : | $(import_includes)
+#ALL_C_CPP_ETC_OBJECTS += $(all_objects)
+# TODO: ETC ???
+
 
 ###########################################################
 # Standard library handling.
@@ -204,16 +253,6 @@ built_whole_libraries := \
 $(warning LOCAL_WHOLE_STATIC_LIBRARIES == $(LOCAL_WHOLE_STATIC_LIBRARIES))
 $(warning built_whole_libraries == $(built_whole_libraries))
 
-#$(DEFAULT_GOAL): $(c_binary)
-#$(DEFAULT_GOAL):
-define xxxxxxxxx
-	@echo "==== $(DEFAULT_GOAL) ===="
-	@echo $(MAKECMDGOALS)
-	@echo $(LOCAL_PATH)
-	@echo $(c_binary)
-	@echo $(c_objects)
-	@echo $(c_deps)
-endef
 
 # FIXED: temp use "dont_bother" defined in main.mk
 #ifneq ($(dont_bother),true)
@@ -225,9 +264,9 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CFLAGS := $(LOCAL_CFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPPFLAGS := $(LOCAL_CPPFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_DEBUG_CFLAGS := $(debug_cflags)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_IMPORT_INCLUDES := $(import_includes)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDFLAGS := $(LOCAL_LDFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
-#$(c_binary): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 
 # this is really the way to get the files onto the command line instead
 # of using $^, because then LOCAL_ADDITIONAL_DEPENDENCIES doesn't work
@@ -245,11 +284,22 @@ all_libraries := \
     $(built_static_libraries) \
     $(built_whole_libraries)
 
-ifneq ($(strip $(c_objects)),)
-$(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
-	$(transform-$(PRIVATE_HOST)c-to-o)
-# NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
-#	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
-#	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
--include $(c_objects:%.o=%.d)
+
+###########################################################
+# Export includes
+###########################################################
+export_includes := $(intermediates)/export_includes
+$(export_includes): PRIVATE_EXPORT_C_INCLUDE_DIRS := $(LOCAL_EXPORT_C_INCLUDE_DIRS)
+$(export_includes) : $(LOCAL_MODULE_MAKEFILE)
+	@echo Export includes file: $< -- $@
+	$(hide) mkdir -p $(dir $@) && rm -f $@
+ifdef LOCAL_EXPORT_C_INCLUDE_DIRS
+	$(hide) for d in $(PRIVATE_EXPORT_C_INCLUDE_DIRS); do \
+	        echo "-I $$d" >> $@; \
+	        done
+else
+	$(hide) touch $@
 endif
+
+# Make sure export_includes gets generated when you are running mm/mmm
+$(LOCAL_BUILT_MODULE) : | $(export_includes)
