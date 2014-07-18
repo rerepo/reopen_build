@@ -170,7 +170,8 @@ $(warning c_objects == $(c_objects))
 
 ifneq ($(strip $(c_objects)),)
 $(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c $(yacc_cpps) \
-    $(LOCAL_ADDITIONAL_DEPENDENCIES)
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
 	$(transform-$(PRIVATE_HOST)c-to-o)
 # NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
 #	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
@@ -197,7 +198,8 @@ $(gen_c_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
     | $(my_compiler_dependencies)
 # TODO: yacc_cpps ???
 $(gen_c_objects): $(intermediates)/%.o: $(intermediates)/%.c $(yacc_cpps) \
-    $(LOCAL_ADDITIONAL_DEPENDENCIES)
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
 	$(transform-$(PRIVATE_HOST)c-to-o)
 #-include $(gen_c_objects:%.o=%.P)
 -include $(gen_c_objects:%.o=%.d)
