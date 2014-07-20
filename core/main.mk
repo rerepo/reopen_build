@@ -1,6 +1,13 @@
 # this turns off the suffix rules built into make
 .SUFFIXES:
 
+# this turns off the RCS / SCCS implicit rules of GNU Make
+% : RCS/%,v
+% : RCS/%
+% : %,v
+% : s.%
+% : SCCS/s.%
+
 # If a rule fails, delete $@.
 .DELETE_ON_ERROR:
 
