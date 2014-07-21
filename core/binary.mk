@@ -268,6 +268,16 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_IMPORT_INCLUDES := $(import_includes)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDFLAGS := $(LOCAL_LDFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_LDLIBS := $(LOCAL_LDLIBS)
 
+LOCAL_OBJECT_FLAGS_APPEND := $(strip $(LOCAL_OBJECT_FLAGS_APPEND))
+ifdef LOCAL_OBJECT_FLAGS_APPEND
+$(foreach flags,$(LOCAL_OBJECT_FLAGS_APPEND),$(eval $(addprefix $(intermediates)/,$(call get-object-flags-1,$(flags))): PRIVATE_CFLAGS += $(call get-object-flags-2,$(flags))))
+endif
+
+LOCAL_OBJECT_FLAGS_OVERRIDE := $(strip $(LOCAL_OBJECT_FLAGS_OVERRIDE))
+ifdef LOCAL_OBJECT_FLAGS_OVERRIDE
+$(foreach flags,$(LOCAL_OBJECT_FLAGS_OVERRIDE),$(eval $(addprefix $(intermediates)/,$(call get-object-flags-1,$(flags))): PRIVATE_CFLAGS := $(call get-object-flags-2,$(flags))))
+endif
+
 # this is really the way to get the files onto the command line instead
 # of using $^, because then LOCAL_ADDITIONAL_DEPENDENCIES doesn't work
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_ALL_SHARED_LIBRARIES := $(built_shared_libraries)

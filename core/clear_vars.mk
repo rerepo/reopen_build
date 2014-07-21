@@ -142,6 +142,11 @@ LOCAL_POST_INSTALL_CMD:=
 LOCAL_DIST_BUNDLED_BINARIES:=
 LOCAL_HAL_STATIC_LIBRARIES:=
 
+# local object-flags
+# usage: $(call convert-object-flags,$(object),$(flags))
+LOCAL_OBJECT_FLAGS_APPEND:=
+LOCAL_OBJECT_FLAGS_OVERRIDE:=
+
 # Trim MAKEFILE_LIST so that $(call my-dir) doesn't need to
 # iterate over thousands of entries every time.
 # Leave the current makefile to make sure we don't break anything

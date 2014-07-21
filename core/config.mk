@@ -7,6 +7,8 @@
 empty :=
 space := $(empty) $(empty)
 comma := ,
+colon := :
+equal := =
 
 # Standard source directories.
 SRC_TARGET_DIR := $(TOPDIR)build/target
