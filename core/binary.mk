@@ -72,6 +72,7 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_PROJECT_INCLUDES := $(my_target_pr
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_C_INCLUDES := $(my_target_c_includes)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS := $(my_target_global_cflags)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CPPFLAGS := $(TARGET_GLOBAL_CPPFLAGS)
+# NOTE: only PRIVATE_TARGET_GLOBAL_CFLAGS but have NOT PRIVATE_HOST_GLOBAL_CFLAGS
 
 ###########################################################
 ## Define PRIVATE_ variables used by multiple module types
@@ -121,6 +122,35 @@ else
 $(LOCAL_BUILT_MODULE): PRIVATE_GROUP_STATIC_LIBRARIES :=
 endif
 
+###########################################################
+## Define arm-vs-thumb-mode flags.
+###########################################################
+LOCAL_ARM_MODE := $(strip $(LOCAL_ARM_MODE))
+ifeq ($(TARGET_ARCH),arm)
+arm_objects_mode := $(if $(LOCAL_ARM_MODE),$(LOCAL_ARM_MODE),arm)
+normal_objects_mode := $(if $(LOCAL_ARM_MODE),$(LOCAL_ARM_MODE),thumb)
+
+# Read the values from something like TARGET_arm_CFLAGS or
+# TARGET_thumb_CFLAGS.  HOST_(arm|thumb)_CFLAGS values aren't
+# actually used (although they are usually empty).
+ifeq ($(strip $(LOCAL_CLANG)),true)
+arm_objects_cflags := $($(my_prefix)$(arm_objects_mode)_CLANG_CFLAGS)
+normal_objects_cflags := $($(my_prefix)$(normal_objects_mode)_CLANG_CFLAGS)
+else
+arm_objects_cflags := $($(my_prefix)$(arm_objects_mode)_CFLAGS)
+normal_objects_cflags := $($(my_prefix)$(normal_objects_mode)_CFLAGS)
+endif
+$(warning arm_objects_mode == $(arm_objects_mode))
+$(warning normal_objects_mode == $(normal_objects_mode))
+$(warning arm_objects_cflags == $(arm_objects_cflags))
+$(warning normal_objects_cflags == $(normal_objects_cflags))
+
+else
+arm_objects_mode :=
+normal_objects_mode :=
+arm_objects_cflags :=
+normal_objects_cflags :=
+endif
 
 ###########################################################
 ## Define per-module debugging flags.  Users can turn on
@@ -142,6 +172,63 @@ endif
 $(LOCAL_GENERATED_SOURCES): PRIVATE_MODULE := $(LOCAL_MODULE)
 
 ALL_GENERATED_SOURCES += $(LOCAL_GENERATED_SOURCES)
+
+
+###########################################################
+## C++: Compile .cpp files to .o.
+###########################################################
+
+# we also do this on host modules, even though
+# it's not really arm, because there are files that are shared.
+cpp_arm_sources    := $(patsubst %$(LOCAL_CPP_EXTENSION).arm,%$(LOCAL_CPP_EXTENSION),$(filter %$(LOCAL_CPP_EXTENSION).arm,$(LOCAL_SRC_FILES)))
+cpp_arm_objects    := $(addprefix $(intermediates)/,$(cpp_arm_sources:$(LOCAL_CPP_EXTENSION)=.o))
+
+cpp_normal_sources := $(filter %$(LOCAL_CPP_EXTENSION),$(LOCAL_SRC_FILES))
+cpp_normal_objects := $(addprefix $(intermediates)/,$(cpp_normal_sources:$(LOCAL_CPP_EXTENSION)=.o))
+
+$(cpp_arm_objects):    PRIVATE_ARM_MODE := $(arm_objects_mode)
+$(cpp_arm_objects):    PRIVATE_ARM_CFLAGS := $(arm_objects_cflags)
+$(cpp_normal_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
+$(cpp_normal_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+
+cpp_objects        := $(cpp_arm_objects) $(cpp_normal_objects)
+
+$(warning cpp_objects == $(cpp_objects))
+
+ifneq ($(strip $(cpp_objects)),)
+$(cpp_objects): $(intermediates)/%.o: \
+    $(TOPDIR)$(LOCAL_PATH)/%$(LOCAL_CPP_EXTENSION) \
+    $(yacc_cpps) $(proto_generated_headers) \
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
+#    | $(my_compiler_dependencies)
+	$(transform-$(PRIVATE_HOST)cpp-to-o)
+#-include $(cpp_objects:%.o=%.P)
+-include $(cpp_objects:%.o=%.d)
+endif
+
+###########################################################
+## C++: Compile generated .cpp files to .o.
+###########################################################
+
+gen_cpp_sources := $(filter %$(LOCAL_CPP_EXTENSION),$(LOCAL_GENERATED_SOURCES))
+gen_cpp_objects := $(gen_cpp_sources:%$(LOCAL_CPP_EXTENSION)=%.o)
+
+ifneq ($(strip $(gen_cpp_objects)),)
+# Compile all generated files as thumb.
+# TODO: support compiling certain generated files as arm.
+$(gen_cpp_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
+$(gen_cpp_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+$(gen_cpp_objects): $(intermediates)/%.o: \
+    $(intermediates)/%$(LOCAL_CPP_EXTENSION) $(yacc_cpps) \
+    $(proto_generated_headers) \
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
+#    | $(my_compiler_dependencies)
+	$(transform-$(PRIVATE_HOST)cpp-to-o)
+#-include $(gen_cpp_objects:%.o=%.P)
+-include $(gen_cpp_objects:%.o=%.d)
+endif
 
 
 ###########################################################
@@ -234,14 +321,12 @@ endif
 # some rules depend on asm_objects being first.  If your code depends on
 # being first, it's reasonable to require it to be assembly
 normal_objects := \
+    $(cpp_objects) \
+    $(gen_cpp_objects) \
     $(c_objects) \
     $(gen_c_objects)
 #    $(asm_objects) \
 #    $(gen_asm_objects) \
-#    $(cpp_objects) \
-#    $(gen_cpp_objects) \
-#    $(c_objects) \
-#    $(gen_c_objects) \
 #    $(addprefix $(TOPDIR)$(LOCAL_PATH)/,$(LOCAL_PREBUILT_OBJ_FILES))
 # TODO: PREBUILT_OBJ_FILES ???
 
@@ -308,6 +393,7 @@ $(warning built_whole_libraries == $(built_whole_libraries))
 ###########################################################
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CFLAGS := $(LOCAL_CFLAGS)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_CPPFLAGS := $(LOCAL_CPPFLAGS)
+$(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_RTTI_FLAG := $(LOCAL_RTTI_FLAG)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_DEBUG_CFLAGS := $(debug_cflags)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_C_INCLUDES := $(LOCAL_C_INCLUDES)
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_IMPORT_INCLUDES := $(import_includes)

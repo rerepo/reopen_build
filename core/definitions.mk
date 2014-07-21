@@ -447,6 +447,37 @@ endef
 
 
 ###########################################################
+## Commands for running gcc to compile a C++ file
+###########################################################
+
+define transform-cpp-to-o
+@mkdir -p $(dir $@)
+@echo "target $(PRIVATE_ARM_MODE) C++: $(PRIVATE_MODULE) <= $<"
+$(hide) $(PRIVATE_CXX) \
+	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(shell cat $(PRIVATE_IMPORT_INCLUDES)) \
+	$(addprefix -isystem ,\
+	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	        $(filter-out $(PRIVATE_C_INCLUDES), \
+	            $(PRIVATE_TARGET_PROJECT_INCLUDES) \
+	            $(PRIVATE_TARGET_C_INCLUDES)))) \
+	-c \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	    $(PRIVATE_TARGET_GLOBAL_CFLAGS) \
+	    $(PRIVATE_TARGET_GLOBAL_CPPFLAGS) \
+	    $(PRIVATE_ARM_CFLAGS) \
+	 ) \
+	$(PRIVATE_RTTI_FLAG) \
+	$(PRIVATE_CFLAGS) \
+	$(PRIVATE_CPPFLAGS) \
+	$(PRIVATE_DEBUG_CFLAGS) \
+	-MD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+endef
+#	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
+#$(transform-d-to-p)
+
+
+###########################################################
 ## Commands for running gcc to compile a C file
 ###########################################################
 
@@ -491,6 +522,35 @@ define transform-s-to-o
 $(transform-s-to-o-no-deps)
 $(transform-d-to-p)
 endef
+
+
+###########################################################
+## Commands for running gcc to compile a host C++ file
+###########################################################
+
+define transform-host-cpp-to-o
+@mkdir -p $(dir $@)
+@echo "host C++: $(PRIVATE_MODULE) <= $<"
+$(hide) $(PRIVATE_CXX) \
+	$(addprefix -I , $(PRIVATE_C_INCLUDES)) \
+	$(shell cat $(PRIVATE_IMPORT_INCLUDES)) \
+	$(addprefix -isystem ,\
+	    $(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	        $(filter-out $(PRIVATE_C_INCLUDES), \
+	            $(HOST_PROJECT_INCLUDES) \
+	            $(HOST_C_INCLUDES)))) \
+	-c \
+	$(if $(PRIVATE_NO_DEFAULT_COMPILER_FLAGS),, \
+	    $(HOST_GLOBAL_CFLAGS) \
+	    $(HOST_GLOBAL_CPPFLAGS) \
+	 ) \
+	$(PRIVATE_CFLAGS) \
+	$(PRIVATE_CPPFLAGS) \
+	$(PRIVATE_DEBUG_CFLAGS) \
+	-MD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+endef
+#	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
+#$(transform-d-to-p)
 
 
 ###########################################################
