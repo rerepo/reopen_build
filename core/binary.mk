@@ -137,6 +137,20 @@ endif
 
 
 ###########################################################
+## Stuff source generated from one-off tools
+###########################################################
+$(LOCAL_GENERATED_SOURCES): PRIVATE_MODULE := $(LOCAL_MODULE)
+
+ALL_GENERATED_SOURCES += $(LOCAL_GENERATED_SOURCES)
+
+
+###########################################################
+## o: Include generated .o files in output.
+###########################################################
+
+gen_o_objects := $(filter %.o,$(LOCAL_GENERATED_SOURCES))
+
+###########################################################
 ## C: Compile .c files to .o.
 ###########################################################
 
@@ -155,12 +169,40 @@ $(warning c_objects == $(c_objects))
 #$(warning c_deps == $(c_deps))
 
 ifneq ($(strip $(c_objects)),)
-$(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c
+$(c_objects): $(intermediates)/%.o: $(TOPDIR)$(LOCAL_PATH)/%.c $(yacc_cpps) \
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
 	$(transform-$(PRIVATE_HOST)c-to-o)
 # NOTE: below echo define in definitions.mk like transform-c-to-o-no-deps
 #	@echo "target $(PRIVATE_ARM_MODE) C: $(PRIVATE_MODULE) <= $<"
 #	$(hide) $(PRIVATE_CC) -o $@ -c -fPIC $< -MMD -MF $(patsubst %.o,%.d,$@) $(addprefix -I ,$(PRIVATE_C_INCLUDES))
 -include $(c_objects:%.o=%.d)
+endif
+
+###########################################################
+## C: Compile generated .c files to .o.
+###########################################################
+
+gen_c_sources := $(filter %.c,$(LOCAL_GENERATED_SOURCES))
+gen_c_objects := $(gen_c_sources:%.c=%.o)
+
+$(warning gen_c_objects == $(gen_c_objects))
+
+ifneq ($(strip $(gen_c_objects)),)
+# Compile all generated files as thumb.
+# TODO: support compiling certain generated files as arm.
+$(gen_c_objects): PRIVATE_ARM_MODE := $(normal_objects_mode)
+$(gen_c_objects): PRIVATE_ARM_CFLAGS := $(normal_objects_cflags)
+#$(gen_c_objects): $(intermediates)/%.o: $(intermediates)/%.c $(yacc_cpps) $(proto_generated_headers) \
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(my_compiler_dependencies)
+# TODO: yacc_cpps ???
+$(gen_c_objects): $(intermediates)/%.o: $(intermediates)/%.c $(yacc_cpps) \
+    $(LOCAL_ADDITIONAL_DEPENDENCIES) \
+    | $(LOCAL_ADDITIONAL_HEADERS)
+	$(transform-$(PRIVATE_HOST)c-to-o)
+#-include $(gen_c_objects:%.o=%.P)
+-include $(gen_c_objects:%.o=%.d)
 endif
 
 
@@ -191,7 +233,9 @@ endif
 
 # some rules depend on asm_objects being first.  If your code depends on
 # being first, it's reasonable to require it to be assembly
-normal_objects := $(c_objects)
+normal_objects := \
+    $(c_objects) \
+    $(gen_c_objects)
 #    $(asm_objects) \
 #    $(gen_asm_objects) \
 #    $(cpp_objects) \
@@ -202,6 +246,7 @@ normal_objects := $(c_objects)
 # TODO: PREBUILT_OBJ_FILES ???
 
 all_objects := $(normal_objects) $(gen_o_objects)
+$(warning all_objects == $(all_objects))
 
 # FIXME: whether current include ???
 #LOCAL_C_INCLUDES += $(TOPDIR)$(LOCAL_PATH) $(intermediates)
@@ -211,6 +256,7 @@ all_objects := $(normal_objects) $(gen_o_objects)
 # that custom build rules which generate .o files don't consume other generated
 # sources as input (or if they do they take care of that dependency themselves).
 $(normal_objects) : | $(LOCAL_GENERATED_SOURCES)
+# NOTE: normal_objects depend LOCAL_GENERATED_SOURCES
 $(all_objects) : | $(import_includes)
 #ALL_C_CPP_ETC_OBJECTS += $(all_objects)
 # TODO: ETC ???
