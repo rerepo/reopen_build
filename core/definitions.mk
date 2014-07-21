@@ -859,15 +859,15 @@ endef
 # $(1): object (like: xx.o yy.o)
 # $(2): falgs  (like: -DXX -DYY)
 define convert-object-flags
-$(subst $(space),$(colon),$(strip $(1)))$(equal)$(subst $(space),$(colon),$(strip $(2)))
+$(subst $(space),$(colon),$(strip $(1)))$(pipe)$(subst $(space),$(colon),$(strip $(2)))
 endef
 
 define get-object-flags-1
-$(subst $(colon),$(space),$(word 1,$(subst $(equal),$(space),$(1))))
+$(subst $(colon),$(space),$(word 1,$(subst $(pipe),$(space),$(1))))
 endef
 
 define get-object-flags-2
-$(subst $(colon),$(space),$(word 2,$(subst $(equal),$(space),$(1))))
+$(subst $(colon),$(space),$(word 2,$(subst $(pipe),$(space),$(1))))
 endef
 
 
