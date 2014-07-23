@@ -498,7 +498,7 @@ $(hide) $(PRIVATE_CC) \
 	    $(PRIVATE_ARM_CFLAGS) \
 	 ) \
 	 $(1) \
-	-MMD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+	-MD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
 endef
 #	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 # TODO: PRIVATE_ARM_CFLAGS should define in binary.mk
@@ -573,7 +573,7 @@ $(hide) $(PRIVATE_CC) \
 	    $(HOST_GLOBAL_CFLAGS) \
 	) \
 	$(1) \
-	-MMD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
+	-MD -MP -MF $(patsubst %.o,%.d,$@) -o $@ $<
 endef
 #	-MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 
